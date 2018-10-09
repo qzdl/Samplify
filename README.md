@@ -14,10 +14,13 @@ The initial approach was (for simplicity's sake) that of a binary classification
 These inputs were normalized and split into validation, test and train sets before training the initial RF (with 100 estimators), which gave insight into the importance of the various features. SVM and Logistic Regression models were trained next, to investigate their performance on the same task. Finally, XGBoost achieved some of the best results, after tuning parameters using a GridSearch to find the optimal values for learning rate, max tree depth, and number of learners. 
 
 ### Regression
+Model performance was compared to a naive baseline model (assuming price remains same as previous day). For each fund analyzed, an ARIMA model is implemented using fbprophet and a LSTM Neural Network is trained using Keras to predict the following day's closing price. Inputs of the LSTM are (at the moment) limited to the five results obtained from iexfinance.
 
 ## Visualizations
 Bloomberg's fantastic python library [bqplot](https://github.com/bloomberg/bqplot) enabled the creation of the ETF market map, shown below:
 ![MarketMap](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/MarketMap.jpg "1-day returns for ETFs by sector")
 
-Matplotlib was used for static graphs, and [Plotly](https://plot.ly/python/candlestick-charts/) was used for dynamic financial charts.
+Matplotlib was used for static graphs, and [Plotly](https://plot.ly/python/candlestick-charts/) was used for dynamic financial charts, as well as forecasts shown below:
 
+![MarketMap](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/MarketMap.jpg "1-day returns for ETFs by sector")
+![MarketMap](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/MarketMap.jpg "1-day returns for ETFs by sector")
