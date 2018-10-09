@@ -22,5 +22,11 @@ Bloomberg's fantastic python library [bqplot](https://github.com/bloomberg/bqplo
 
 Matplotlib was used for static graphs, and [Plotly](https://plot.ly/python/candlestick-charts/) was used for dynamic financial charts, as well as forecasts shown below:
 
-![CandleStick](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/historical.jpg "1-day returns for ETFs by sector")
-![Forecast](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/forecast.jpg "1-day returns for ETFs by sector")
+![CandleStick](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/historical.jpg "3 years of daily data")
+![Forecast](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/forecast.jpg "LSTM predictions vs. Naive Model")
+
+All of this was put together in a Jupyter Dashboard, with many more features to come!
+
+## Future Improvements
+* Building relational database to store historical prices as well as underlying stocks and data for each ETF
+* Improving LSTM predictions by including economic indcators and other useful data
