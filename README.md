@@ -21,7 +21,7 @@ Financial analysts use a number of technical indicators, which are quantities de
 • Lagged Profits: Price changes over the previous 1-5 day periods were also included in the inputs.
 
 The resulting vectors for a given day is shown below:
-![DataVectors](https://github.com/cpease00/etf_forecasting/blob/master/data_science/vectors.jpg "5 days of data")
+![DataVectors](https://github.com/cpease00/etf_forecasting/blob/master/vectors.jpg "5 days of data")
 
 
 ## Methodology
@@ -51,6 +51,6 @@ All of this was put together in a Jupyter Dashboard, with many more features to 
 ## Further Imoprovements
 One of the main weaknesses of this forecasting analysis is that it is wholly based on past pricing data. In order to increase sensitivity to state of the economy, statistics from the US Treasury can be included in the analysis. The following scatter matrix shows plots of each of the variables relative to each other. The top row is useful for looking for relationships with the regression target which we are trying to predict. There are no strong correlations, but future features can be identified through these methods.
 
-![Scatter](https://github.com/cpease00/etf_forecasting/blob/master/data_science/scatter.jpg "Scatter Matrix of US Treasury Variables")
+![Scatter](github.com/cpease00/etf_forecasting/blob/master/scatter.jpg "Scatter Matrix of US Treasury Variables")
 
 It would also be beneficial to construct a relational database to store historical prices as well as underlying stocks and data for each ETF.
