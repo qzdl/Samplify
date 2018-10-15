@@ -48,7 +48,7 @@ Matplotlib was used for static graphs, and [Plotly](https://plot.ly/python/candl
 
 All of this was put together in a Jupyter Dashboard, with many more features yet to come!
 
-## Further Imoprovements
+## Further Improvements
 One of the main weaknesses of this forecasting analysis is that it is wholly based on past pricing data. In order to increase sensitivity to state of the economy, statistics from the US Treasury can be included in the analysis. The following scatter matrix shows plots of each of the variables plotted against the other. 
 
 ![Scatter](https://github.com/cpease00/etf_forecasting/blob/master/scatter.jpg "Scatter Matrix of US Treasury Variables")
