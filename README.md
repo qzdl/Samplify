@@ -5,7 +5,7 @@ Exchange Traded Funds are rapidly replacing traditional investment stratgies lik
 
 ## The Market Map
 Bloomberg's fantastic python library [bqplot](https://github.com/bloomberg/bqplot) enabled the creation of the ETF market map shown below:
-![MarketMap](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/MarketMap.jpg "1-day returns for ETFs by sector")
+![MarketMap](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/market.jpg "1-day returns for ETFs by sector")
 
 Each box represents a different ETF, which when hovered over displays stats about that fund. The bold dividing lines between different sections of the map encompass different 'segments' or types of ETF. For example, large market capitalization ETFs are grouped together. The dropdown allows you to toggle between different options for what the colors represent. When 1 week returns is selected, for example, dark green corresponds to high-performing funds over that time period, while dark red means a drop in price. The scale on the bottom details exactly what the range of changes is for the chosen time period. 
 
@@ -13,7 +13,7 @@ Each box represents a different ETF, which when hovered over displays stats abou
 5 years of historical price data are provided for free by [IEX](https://iextrading.com/developer/). View IEX’s [Terms of Use](https://iextrading.com/api-exhibit-a/). There is no sign up or api key required, so anyone can pull the required data immediately. IEX Finanace provides open, close, high, low and volume for all ETFs, producing 5 years of historical pricing corresponding to about 1250 rows of data for each fund. This was merged with information such as assets under management, expense ratio and segment, obtained from Yahoo Finance, ETFdb.com and ETF.com.
 
 The historical data is best viewed in the form of a candlestick chart, which displays daily price changes as well as the spread in prices thoughout the day. Plotly candlestick charts are interactive, and may be shifted to any desired range. 
-![CandleStick](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/historical.jpg "3 years of daily data")
+![CandleStick](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/candlestick.jpg "3 years of daily data")
 
 ## Feature Engineering/Technical indicators
 Financial analysts use a number of technical indicators, which are quantities derived from various ratios of past prices in time-series data. I decided to include them in my analysis, particulary as they assisted in the task of classifying price direction. They are as follows:
