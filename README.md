@@ -48,11 +48,10 @@ Matplotlib was used for static graphs, and [Plotly](https://plot.ly/python/candl
 All of this was put together in a Jupyter Dashboard, with many more features yet to come!
 
 ## Further Imoprovements
-One of the main weaknesses of this forecasting analysis is that it is wholly based on past pricing data. In order to increase sensitivity to state of the economy, statistics from the US Treasury can be included in the analysis. The following scatter matrix shows plots of each of the variables relative to each other. The top row is useful for looking for relationships with the regression target which we are trying to predict. There are no strong correlations in the variables shown, but future features can be identified through these method.
+One of the main weaknesses of this forecasting analysis is that it is wholly based on past pricing data. In order to increase sensitivity to state of the economy, statistics from the US Treasury can be included in the analysis. The following scatter matrix shows plots of each of the variables plotted against the other. 
 
 ![Scatter](https://github.com/cpease00/etf_forecasting/blob/master/scatter.jpg "Scatter Matrix of US Treasury Variables")
-
-It would also be beneficial to construct a relational database to store historical prices as well as underlying stocks and data for each ETF. 
+The top row here is useful for looking for relationships with the regression target which we are trying to predict. There are no strong correlations in the variables shown, but future features can be identified through these method, and Quandl has thousands available. It would also be beneficial to construct a relational database to store all these variables, historical prices, underlying stocks and data for each ETF. 
 
 ## Relevant Resources
 
