@@ -13,6 +13,7 @@ Each box represents a different ETF, which when hovered over displays stats abou
 5 years of historical price data are provided for free by [IEX](https://iextrading.com/developer/). View IEX’s [Terms of Use](https://iextrading.com/api-exhibit-a/). There is no sign up or api key required, so anyone can pull the required data immediately. IEX Finanace provides open, close, high, low and volume for all ETFs, producing 5 years of historical pricing corresponding to about 1250 rows of data for each fund. This was merged with information such as assets under management, expense ratio and segment, obtained from Yahoo Finance, ETFdb.com and ETF.com.
 
 The historical data is best viewed in the form of a candlestick chart, which displays daily price changes as well as the spread in prices thoughout the day. Plotly candlestick charts are interactive, and may be shifted to any desired range. 
+
 ![CandleStick](https://github.com/cpease00/etf_forecasting/blob/master/data_science/finance/images/candlestick.jpg "3 years of daily data")
 
 ## Feature Engineering/Technical indicators
@@ -28,7 +29,7 @@ Financial analysts use a number of technical indicators, which are quantities de
 
 The resulting vectors for a given day is shown below:
 ![DataVectors](https://github.com/cpease00/etf_forecasting/blob/master/vectors.jpg "5 days of data")
-Where the CLF_Target corresponds to whether the price has gone up or remained constant(1) or gone down(0)
+Where the Clf_Target column represents to whether the price has gone up/remained constant(1) or gone down(0)
 
 ## Forecasting Methodology
 ### Classification
