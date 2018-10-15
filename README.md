@@ -56,5 +56,7 @@ The top row here is useful for looking for relationships with the regression tar
 ## Relevant Resources
 
 [More on LSTMs](http://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+
 [Overview of Naive Methods](https://otexts.org/fpp2/simple-methods.html)
+
 [Global State of ETFs 2017](https://www.ey.com/Publication/vwLUAssets/ey-global-etf-survey-2017/$FILE/ey-global-etf-survey-2017.pdf)
