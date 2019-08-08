@@ -1,15 +1,19 @@
 import requests
 from bs4 import BeautifulSoup
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-http = urllib3.PoolManager()
 
+# create a session to manage lifetime of requests and skip auto-reject from
+# whosampled; seems pretty unfriendly to block request's default headers.
+req = requests.Session()
+adapter = requests.adapters.HTTPAdapter(max_retries=10)
+req.mount('https://', adapter)
+req.mount('http://', adapter)
+req.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36"}
 
 def retrieve_song_link(song_name, artist_name=None):
     query = song_name.replace(' ', '%20')
-    url = 'https://www.whosampled.com/search/tracks/?q={}'.format(query)
-    r = http.request('GET', url)
-    content = r.data
+    url = f'https://www.whosampled.com/search/tracks/?q={query}'
+    r = req.get(url)
+    content = r.content
     soup = BeautifulSoup(content, 'html.parser')
     stuff = soup.findAll('li', attrs={'class': "listEntry"})
     if stuff:
@@ -21,8 +25,8 @@ def retrieve_song_link(song_name, artist_name=None):
 def retrieve_samples_v2(song_name, link):
     samples = []
     sampled_by = []
-    s = http.request('GET', 'https://www.whosampled.com'+link)
-    content1 = s.data
+    s = req.get(f'https://www.whosampled.com{link}')
+    content1 = s.content
     soup = BeautifulSoup(content1, 'html.parser')
     listed = [i.text for i in soup.findAll('div', attrs={'class':'list bordered-list'})]
     if len(listed) == 2:
@@ -37,12 +41,12 @@ def retrieve_samples_v2(song_name, link):
     return samples, sampled_by
 
 def getme_thesamples(song_name, artist_name):
+    print(f'getme_thesamples: {song_name}: {artist_name}')
     link = retrieve_song_link(song_name, artist_name)
-    if link:
-        samples, sampled_by = retrieve_samples_v2(song_name, link)
-        return samples, sampled_by
-    else:
+    if not link:
         return None, None
+    samples, sampled_by = retrieve_samples_v2(song_name, link)
+    return samples, sampled_by
 
 def get_whosampled_playlist(loaded_playlist):
     samples = []

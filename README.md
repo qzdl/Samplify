@@ -13,9 +13,19 @@ Setup TLDR; `git clone https://github.com/cpease00/spotify-samples.git && cd spo
 ### Spotify API Access; config.py
 If you haven't used the spotify API before:
 - Head to the [developer dashboard](https://developer.spotify.com/dashboard/) and register a new application
-- Create `config.py` at the root of the repository, and populate it as follows:
+- Create `config.py` at the root of the repository, and populate it as follows: (NOTE: these are not valid credentials)
 ```
-lol TODO: find out what the config vars are
+# ClientID from registered application at https://developers.spotify.com/dashboard/applications
+client = '7bf224e8jn954215s3g11degh599e3an'
+
+# Client Secret can be found below 'SHOW CLIENT SECRET' once you are on the info
+# page of a registered application
+secret = '7bf224e8jn954215s3g11degh599e3an'
+
+# The easiest way I've found to get this is to hit the /v1/me enpoint:
+# https://developer.spotify.com/console/get-current-user/
+# find the "uri" property, e.g. "uri": "spotify:user:1134745600"
+username = '1134745600'
 ```
 
 ## Usage
