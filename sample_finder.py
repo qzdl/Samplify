@@ -3,7 +3,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import json
 from spotipy.util import prompt_for_user_token
 from spotipy import util
-from whosampled_scrape import *
+from tools.whosampled_scrape import *
 from config import *
 
 def call_api(username, scope='playlist-modify-public'):
