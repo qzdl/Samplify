@@ -10,12 +10,13 @@ Setup TLDR; `git clone https://github.com/cpease00/spotify-samples.git && cd spo
   `conda env create -f environment.yml`
   * Refer to [`environment.yml`](./environment.yml) for a list of packages
 
-### Spotify API Access
-If you haven't used the spotify API before, head to https://developer.spotify.com/dashboard/
-to get you
-
-
-### Configuration Files
+### Spotify API Access; config.py
+If you haven't used the spotify API before:
+- Head to the [developer dashboard](https://developer.spotify.com/dashboard/) and register a new application
+- Create `config.py` at the root of the repository, and populate it as follows:
+```
+lol TODO: find out what the config vars are
+```
 
 ## Usage
 This is a short program that, given a Spotify playlist, creates a new playlist
