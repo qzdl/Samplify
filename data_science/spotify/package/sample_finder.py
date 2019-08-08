@@ -31,6 +31,7 @@ def get_sample_data(uri, sp):
     new_playlist_tracks = get_whosampled_playlist(loaded_playlist)
     return new_playlist_tracks
 
+
 def get_spotify_ids(whosampled_playlist, sp):
     id_list = []
     unfound_list= []
@@ -73,11 +74,12 @@ def get_new_sample_playlist(uri, new_playlist_name, user):
     pass
 
 def run_program():
-    uri = input('Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n')
-    name = input('Please enter the name of your new sample playlist\n')
+    # FIXME: outofrange exception
+    playlist_uri = input('Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n')
+    new_playlist_name = input('Please enter the name of your new sample playlist\n')
     username = uri.split(':')[2]
     playlist_id = uri.split(':')[4]
-    get_new_sample_playlist(uri, name, username)
+    get_new_sample_playlist(playlist_uri, new_playlist_name, username)
     pass
 
 run_program()

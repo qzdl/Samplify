@@ -1,0 +1,12 @@
+# TODO: Versions
+name: spotify_samples
+
+dependencies:
+  # core
+  - python>=3.6
+  - beautifulsoup4
+  - autopep8
+  - ipython
+  - pip
+  - pip:
+    - "spotipy"
