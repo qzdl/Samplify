@@ -9,7 +9,7 @@ import config as cfg
 def get_playlist_id_from_uri(uri):
     return uri.split(':')[2]
 
-def call_api(cfg.username, scope='playlist-modify-public'):
+def call_api(username, scope='playlist-modify-public'):
     token = util.prompt_for_user_token(cfg.username, scope, client_id=cfg.client,
             client_secret=cfg.secret, redirect_uri='http://localhost:8889')
     return token
@@ -21,7 +21,7 @@ def make_description(spot_dict):
     return summary
 
 def read_playlist(uri, sp, link=None):
-    # F
+    # F (FIXME: to pay respects)
     playlist_id = get_playlist_id_from_uri(uri)
     og_tracks = []
     results = sp.user_playlist(cfg.username, playlist_id)
@@ -57,10 +57,10 @@ def get_spotify_ids(whosampled_playlist, sp):
     location_rate=1 - len(unfound_list)/len(whosampled_playlist)
     return {'ids': id_list, 'unfound': unfound_list, 'rate': location_rate}
 
-def create_and_populate(cfg.username, new_playlist_name, spotify_dict, sp):
-    playlist = sp.user_playlist_create(cfg.username, new_playlist_name)
-    newest_id = sp.user_playlists(cfg.username)['items'][0]['id'] #get ID of playlist just created
-    sp.user_playlist_add_tracks(cfg.username, newest_id, spotify_dict['ids'], None) #populate playlist with all samples
+def create_and_populate(username, new_playlist_name, spotify_dict, sp):
+    playlist = sp.user_playlist_create(username, new_playlist_name)
+    newest_id = sp.user_playlists(username)['items'][0]['id'] # get ID of playlist just created
+    sp.user_playlist_add_tracks(username, newest_id, spotify_dict['ids'], None) #populate playlist with all samples
     pass
 
 def get_new_sample_playlist(uri, new_playlist_name, user):
@@ -77,15 +77,11 @@ def get_new_sample_playlist(uri, new_playlist_name, user):
 #     sp2.user_playlist_change_details(cfg.username, playlist_id, name=new_playlist_name, public=None, collaborative=None,description=description)
     pass
 
-def run():
-    playlist_uri = 'spotify:playlist:36nHrbeB9jzGshmG4P5yCR'
-    new_playlist_name = 'test sample playlist'
-    # playlist_uri = input('Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n')
-    # new_playlist_name = input('Please enter the name of your new sample playlist\n')
-    # FIXME: outofrange exception
-    playlist_id = playlist_uri.split(':')[2]
+def main():
+    playlist_uri = input('Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n>>> ')
+    new_playlist_name = input('Please enter the name of your new sample playlist\n>>> ')
+    playlist_id = get_id_from_playlist_uri(playlist_uri)
 
     get_new_sample_playlist(playlist_uri, new_playlist_name, cfg.username)
-    pass
 
-run()
+main()
