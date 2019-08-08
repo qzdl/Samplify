@@ -11,7 +11,7 @@ def get_playlist_id_from_uri(uri):
 
 def call_api(username, scope='playlist-modify-public'):
     token = util.prompt_for_user_token(cfg.username, scope, client_id=cfg.client,
-            client_secret=cfg.secret, redirect_uri='http://localhost:8889')
+            client_secret=cfg.secret, redirect_uri=cfg.redirect)
     return token
 
 def make_description(spot_dict):
@@ -80,7 +80,7 @@ def get_new_sample_playlist(uri, new_playlist_name, user):
 def main():
     playlist_uri = input('Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n>>> ')
     new_playlist_name = input('Please enter the name of your new sample playlist\n>>> ')
-    playlist_id = get_id_from_playlist_uri(playlist_uri)
+    playlist_id = get_playlist_id_from_uri(playlist_uri)
 
     get_new_sample_playlist(playlist_uri, new_playlist_name, cfg.username)
 

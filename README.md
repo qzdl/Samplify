@@ -13,19 +13,28 @@ Setup TLDR; `git clone https://github.com/cpease00/spotify-samples.git && cd spo
 ### Spotify API Access; config.py
 If you haven't used the spotify API before:
 - Head to the [developer dashboard](https://developer.spotify.com/dashboard/) and register a new application
-- Create `config.py` at the root of the repository, and populate it as follows: (NOTE: these are not valid credentials)
+- Setup a redirect as `http://localhost:<SOME_FREE_PORT>`
+  * This can be found in the information page of a registered application > edit settings.
+- Create `config.py` at the root of the repository, and populate it as follows:
+(NOTE: these are not valid credentials )
 ```
-# ClientID from registered application at https://developers.spotify.com/dashboard/applications
+# ClientID from registered application at:
+https://developers.spotify.com/dashboard/applications
 client = '7bf224e8jn954215s3g11degh599e3an'
 
 # Client Secret can be found below 'SHOW CLIENT SECRET' once you are on the info
 # page of a registered application
 secret = '7bf224e8jn954215s3g11degh599e3an'
 
-# The easiest way I've found to get this is to hit the /v1/me enpoint:
+# The easiest way I've found to get this is to hit the /v1/me endpoint:
 # https://developer.spotify.com/console/get-current-user/
 # find the "uri" property, e.g. "uri": "spotify:user:1134745600"
 username = '1134745600'
+
+# setup this redirect on a registered application. make sure it
+# is identical to the letter or you'll get "INVALID REDIRECT"
+
+redirect = 'http://localhost:8889'
 ```
 
 ## Usage
@@ -35,6 +44,10 @@ the user is prompted to input the Spotify playlist uri, which can be found in
 the playlist details. The user then inputs the desired name for their new sample
 playlist, and within seconds, the sample playlist is created. This was created
 for my personal use, to find new music sampled in some of my favorite songs.
+
+### Example Use (from stout)
+TODO
+
 
 ## Program Overview
 Playlists are read from Spotify through the Spotify API using Spotipy.
