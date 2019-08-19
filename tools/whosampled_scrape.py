@@ -72,12 +72,20 @@ class Scraper:
 
         link (str):
           e.g '/Kenny-Burrell/Midnight-Blue/'
+        TODO: paging
+        relevant pages only exist when # references > 5
+        e.g. https://www.whosampled.com/Nas/Halftime/?sp=1
+        - f'{link}sampled'
+        - 'samples'
         """
         s = self.req.get(f'https://www.whosampled.com{link}')
         page_detail = s.content
         soup = BeautifulSoup(page_detail, 'html.parser')
         listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
 
+        if self.debug:
+            # self.log() # TODO
+            pass
         from time import time
         file_name = f'{time()}.{song_title}.html'
         with open(file_name, 'w+') as f:
@@ -87,17 +95,14 @@ class Scraper:
             f.write(str(listed))
 
         if not listed:
-            print('retrieve_samples_v2: not listed')
             return [], []
-        samples = self.parse_sample_items(song_title=song_title,
+        contains_samples = self.parse_sample_items(song_title=song_title,
                                           sample_data=listed[0])
         if not len(listed) > 2:
-            print('retrieve_samples_v2: not len(listed) > 2')
             return samples, []
         sampled_by = self.parse_sample_items(song_title=song_title,
                                               sample_data=listed[1])
 
-        print('retrieve_samples_v2: len(listed) > 2')
         return samples, sampled_by
 
     def parse_sample_items(self, song_title, sample_data):
@@ -119,3 +124,8 @@ class Scraper:
             })
         print(f'parse_sample_items: {parsed_samples}')
         return parsed_samples
+
+
+    def log(self, function, page_source, items, message):
+        """TODO"""
+        pass

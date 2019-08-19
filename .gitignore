@@ -125,3 +125,6 @@ dmypy.json
 
 config*
 .cache*
+
+# emacs temp files
+\#*
