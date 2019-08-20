@@ -3,221 +3,251 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import json
 from spotipy.util import prompt_for_user_token
 from spotipy import util
-from tools.whosampled_scrape import *
+from tools.whosampled_scrape import Scraper
 import config as cfg
 
 #==[ link types ]===================#
-URI = 'uri'
-HTTP = 'http'
-EMBED = 'embed'
+URI = 'uri' # spotify:album:2laBNOqPW85M3js7qCYhKt
+HTTP = 'http' # https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZpSpuT1Xir6z7hGw
 
-#==[ source types ]=================#
-PLAYLIST = 'playlist'
-ALBUM = 'album'
-ARTIST = 'artist'
-SONG = 'song'
-CURRENT_SONG = 'current_song'
+class Options:
+    def __init__(self):
+       # source typesj
+       self.PLAYLIST = 'playlist'
+       self.ALBUM = 'album'
+       self.ARTIST = 'artist'
+       self.SONG = 'song'
+       self.CURRENT_SONG = 'current_song'
 
-#==[ output types ]=================#
-CREATE_ONLY = 'w'
-APPEND_ONLY = 'a'
-APPEND_OR_CREATE = 'a+'
+       # output types
+       self.CREATE_ONLY = 'w'
+       self.APPEND_ONLY = 'a'
+       self.APPEND_OR_CREATE = 'a+'
 
-def get_token(scope='playlist-modify-public'):
-    token = util.prompt_for_user_token(cfg.username,
-                                       scope,
-                                       client_id=cfg.client,
-                                       client_secret=cfg.secret,
-                                       redirect_uri=cfg.redirect)
-    return token
-
-
-def get_spotify_ids(whosampled_playlist, sp_session):
-    id_list = []
-    unfound_list = []
-    for track in whosampled_playlist:
-        sub_list = []
-        artist = track['artist'].lower()
-        result = sp_session.search(track['title'], limit=50)['tracks']['items']
-
-        for entry in result:
-            if entry['artists'][0]['name'].lower() == artist:
-                sub_list.append(entry['id'])
-                break
-
-        if sub_list: # hit
-            id_list.append(sub_list[0])
-        else:        # no hit
-            unfound_list.append((track['title'] + ' by ' + artist))
-
-    location_rate = 1 - len(unfound_list) / len(whosampled_playlist)
-    return {'ids': id_list, 'unfound': unfound_list, 'rate': location_rate}
-
-
-def create_and_populate(username, new_playlist_name, spotify_dict, sp):
-    playlist = sp.user_playlist_create(cfg.username, new_playlist_name)
-
-    newest_id = sp.user_playlists(cfg.username)['items'][0][
-        'id']  # get ID of playlist just created
-    sp.user_playlist_add_tracks(username, newest_id, spotify_dict['ids'],
-                                None)  #populate playlist with all samples
+    def generate(self, reference, direction, content_type=None, scope=None,
+                 output_name=None, output_type=None, username=None):
+        """Request-wise options object
+        direction:
+            specify (sampled_by|samples)
+        reference:
+            link to identify the content. e.g. spotify:playlist:23sdf098y23kj
+        reference_type:
+            the type of the reference given, e.g. uri
+        content_type:
+            specify (album|song|current_song|playlist)
+        output_name:
+            name of output playlist
+        output_type:
+            (play|append_only|create_only|append_or_create)
+            default=create_only
+        """
+        self.reference = reference
+        self.direction = direction
+        if content_type:
+            self.content_type = content_type
+        else:
+            pass # TODO parse content_type
+        self.output_name = output_name
+        self.output_type = output_type if output_type else self.CREATE_ONLY
+        self.scope = scope
+        self.username = username if username else cfg.username
 
 
-def populate_output(output_type, output_name, content, sp_session):
-    playlist_id = 0
-    if output_type == APPEND_ONLY or output_type == APPEND_OR_CREATE:
-        # search for user playlist where output_name == playlist name
-        raise NotImplemented("Functionality not supported yet")
-
-    if output_type == CREATE_ONLY and playlist_id == 0:
-        playlist = sp_session.user_playlist_create(cfg.username, output_name)
-        print(f'populate_output, playlist => {playlist}')
-        # get created playlist_id
-        playlist_id = sp_session.user_playlists(cfg.username)['items'][0]['id']
-
-    # FIXME: find out what this magic None param corresponds to from spotipy docs
-    sp_session.user_playlist_add_tracks(cfg.username, playlist_id, content['ids'],
-                                None)  # populate playlist with all samples
+class Samplify:
+    def __init__(self, scope='playlist-modify-public',
+                 prompt_for_token=True, debug=False, token=None):
+        self.scraper = Scraper()
+        self.tokens = []
+        self.debug = debug
+        if prompt_for_token:
+            token = self.get_token(scope)
+            self.tokens.append((scope, token))
+            self.spot = spotipy.Spotify(auth=token)
 
 
-def get_new_sample_playlist(playlist_uri, new_playlist_name, user):
-    token = get_token('playlist-modify-public')
-    sp_session = spotipy.Spotify(auth=token)
+    def samplify(self, options):
+        """ The most general endpoint for interacting with samplify
 
-    playlist_id = get_identfier_from_reference_type(reference=playlist_uri, reference_type=URI)
-    source_songs = get_source_list_from_type(playlist_id, PLAYLIST, sp_session)
-    new_playlist_tracks = get_sample_data(source_songs)
-
-    print('\nChecking Spotify for Samples:\n')
-    for track in new_playlist_tracks:
-        print(track['title'] + ' by ' + track['artist'])
-    spotify_dict = get_spotify_ids(new_playlist_tracks, sp_session)
-
-    output_type = CREATE_ONLY
-    output_name = new_playlist_name
-    new_playlist = populate_output(output_type=output_type, output_name=output_name,
-                                   content=spotify_dict, sp_session=sp_session)
-    # new_playlist = create_and_populate(user, new_playlist_name, spotify_dict, sp_session)
-    print(f'New playlist "{new_playlist_name}" created!')
+        """
+        source_songs = self.get_source_spotify_tracks(options)
+        sample_data = self.get_sample_data(source_songs)
 
 
-def generate_description(source, samples):
-    """
-    Gives some information on the playlist.
-
-    """
-    # sample_title, sample_artist, direction, source_artist, source_title
-    song_template = '\n    {0}, by {1}. {2} by {3} in {4}'
-    unfound = str.join('\n', spot_dict['unfound'])
-    rate = round(spot_dict['rate'], 3)
-    description_template = f"""
-This playlist was generated from the {source_type}: {source_name}.
-    For more information, head to https://github.com/qzdl/samplify
-
-Percentage Matched:
-    {rate}
-
-Songs with no match:
-    {unfound}
-
-Song Info:
-    """
-    # sp2.user_playlist_change_details(cfg.username, playlist_id, name=new_playlist_name, public=None, collaborative=None,description=description)
-    return summary
+        spotify_dict = self.get_sample_spotify_tracks(sample_data)
+        self.populate_output(options=options,
+                             sample_data=spotify_dict)
+        print(f'Created playlist {output_name}')
 
 
-def parse_output_option(output_option, output_name):
-    """
-    provides the logic for output options:
-    CREATE_ONLY:
+    def current_song(self, direction, output_name=None, output_type=None):
+        """API for E2E rip of sample data from current song playing"""
+        # scope required?
+        options = Options()
+        options.generate(
+            reference=reference,
+            direction=direction,
+            content_type=options.CURRENT_SONG,
+            output_name=output_name,
+            output_type=output_type
+        )
+        return self.samplify(options)
 
-    """
-    pass
+    def song(self, reference, direction, output_name=None, output_type=None):
+        """API for E2E rip of sample data from song"""
+        options = Options()
+        options.generate(
+            reference=reference,
+            direction=direction,
+            content_type=options.SONG,
+            output_name=output_name,
+            output_type=output_type
+        )
+        return self.samplify(options)
 
+    def album(self, reference, direction, output_name=None, output_type=None):
+        """API for E2E rip of sample data from album"""
+        options = Options()
+        options.generate(
+            reference=reference,
+            direction=direction,
+            content_type=options.ALBUM,
+            output_name=output_name,
+            output_type=output_type
+        )
+        return self.samplify(options)
 
-def format_source_result(results):
-    og_tracks = []
-    for entry in results['tracks']['items']:
-        artists = [prop['name'] for prop in entry['track']['artists']]
-        og_tracks.append({
-            'artist': artists,
-            'track': entry['track']['name'].replace('Instrumental', '')
-        })
-    return og_tracks
+    def playlist(self, reference, direction, output_name=None,
+                 output_type=None, username=None):
+        options = Options()
+        options.generate(
+            reference=reference,
+            direction=direction,
+            content_type=options.PLAYLIST,
+            output_name=output_name,
+            output_type=output_type,
+            username=username
+        )
+        return self.samplify(options)
 
-
-def get_sample_data(source_songs):
-    new_playlist_tracks = get_whosampled_playlist(source_songs)
-    return new_playlist_tracks
-
-
-def get_source_list_from_type(source_id, source_type, sp_session):
-    """
-    Parses out type (song|album|playlist) from link
-    """
-    source_list = {}
-    if source_type == PLAYLIST:
-        results = sp_session.user_playlist(cfg.username, source_id)
-    if source_type == ALBUM:
-        source_list = {}
-    if source_type == SONG:
-        source_list = {}
-    if source_type == CURRENT_SONG:
-        source_list = {}
-    return format_source_result(results)
-
-
-def get_identfier_from_reference_type(reference, reference_type):
-    """
-    extracts necessary identifier from reference
-    (url|uri|embed|scan_image)
-    TODO: handle url
-    TODO: handle embed
-    TODO: handle scan_image
-    """
-    if reference_type == URI:
-        return reference.split(':')[2]
-    raise Exception(f'Reference type {reference_type} not supported')
-
-
-def samplify(direction, reference, reference_type, source_type, output_name, output_type=CREATE_ONLY):
-    """
-    The most general endpoint for interacting with samplify
-
-    direction:
-        specify (sampled_by|samples)
-    reference:
-        link to identify the content. e.g. spotify:playlist:23sdf098y23kj
-    reference_type:
-        the type of the reference given, e.g. uri
-    source_type:
-        specify (album|song|current_song|playlist)
-    output_name:
-        name of output playlist
-    output_type:
-        (append_only|create_only|append_or_create)
-        default=create_only
-    """
-    token = get_token('playlist-modify-public')
-    sp_session = spotipy.Spotify(auth=token)
-
-    identifier = get_identfier_from_reference_type(reference, reference_type)
-    source_songs = get_source_list_from_type(identifier, source_type, sp_session=sp_session)
-    sample_data = get_sample_data(source_songs)
-
-    spotify_dict = get_spotify_ids(sample_data, sp_session)
-    new_playlist = populate_output(output_type=output_type, output_name=output_name,
-                                   content=spotify_dict, sp_session=sp_session)
-    print(f'Created playlist {output_name}')
+    def artist(self, reference):
+        pass
 
 
-def main():
-    playlist_uri = input(
-        'Please enter the Spotify URI of your playlist. \nThis can be found by clicking "Share" on your playlist and then selecting "Copy Spotify URI":\n>>> '
-    )
-    new_playlist_name = input(
-        'Please enter the name of your new sample playlist\n>>> ')
-    get_new_sample_playlist(playlist_uri, new_playlist_name, cfg.username)
+    def get_token(self, scope='playlist-modify-public'):
+        token = util.prompt_for_user_token(
+            cfg.username, scope, client_id=cfg.client,
+            client_secret=cfg.secret, redirect_uri=cfg.redirect)
+        return token
 
 
-# main()
+    def get_source_spotify_tracks(self, options):
+        """ Retrieves tracks respecting source_type (song|album|playlist)
+            options:
+              <Options>
+            Returns:
+              <list>
+        """
+        results = {}
+        if options.content_type == options.PLAYLIST:
+            results = self.spot.user_playlist(options.username, options.reference)
+        if options.content_type == options.ALBUM:
+            results = self.spot.album_tracks(options.reference)
+        if options.content_type == options.SONG:
+            results.append(self.spot.track(options.reference))
+        if options.content_type == options.CURRENT_SONG:
+            results.append(self.spot.curent_user_playing_track())
+
+        return self.format_source_result(results)
+
+    def get_sample_spotify_tracks(self, sample_tracks):
+        """ Searches spotify for sample tracks """
+        if self.debug: self.log('Checking Spotify for Samples')
+        for track in sample_tracks:
+            print(track['title'] + ' by ' + track['artist'])
+
+        id_list = []
+        unfound_list = []
+        for track in sample_tracks:
+            sub_list = []
+            artist = track['artist'].lower()
+            print(f'searching for {track[title]}')
+            result = self.spot.search(track['title'],
+                                      limit=10)['tracks']['items']
+            for entry in result:
+                if entry['artists'][0]['name'].lower() == artist:
+                    sub_list.append(entry['id'])
+                    break
+
+            if sub_list: # hit
+                id_list.append(sub_list[0])
+            else:        # no hit
+                unfound_list.append((track['title'] + ' by ' + artist))
+
+        find_rate = 1 - len(unfound_list) / len(sampled_tracks)
+        if self.debug: self.log(f'Rate of tracks found: {find_rate}')
+        return {'ids': id_list, 'unfound': unfound_list, 'rate': find_rate}
+
+    def get_sample_data(self, source_songs):
+        new_playlist_tracks = self.scraper.get_whosampled_playlist(source_songs)
+        return new_playlist_tracks
+
+
+    def populate_output(self, options, sample_tracks):
+        playlist_id = 0
+        if options.output_type == APPEND_ONLY or \
+           options.output_type == APPEND_OR_CREATE:
+            # search for user playlist where output_name == playlist name
+            raise NotImplemented("Functionality not supported yet")
+
+        if options.output_type == CREATE_ONLY and playlist_id == 0:
+            # create playlist, then retrieve id
+            playlist = self.spot.user_playlist_create(options.username,
+                                                      f'SAMPLIFY: {output_name}')
+            playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
+        self.spot.user_playlist_add_tracks(
+            options.username, playlist_id, sample_tracks['ids'], position=None)
+
+    def generate_description(self, samples):
+        """
+        Gives some information on the playlist.
+
+        """
+        # sample_title, sample_artist, direction, source_artist, source_title
+        song_template = '\n    {0}, by {1}. {2} by {3} in {4}'
+        unfound = str.join('\n', spot_dict['unfound'])
+        rate = round(spot_dict['rate'], 3)
+        description_template = f"""
+    This playlist was generated from the {source_type}: {source_name}.
+        For more information, head to https://github.com/qzdl/samplify
+
+    Percentage Matched:
+        {rate}
+
+    Songs with no match:
+        {unfound}
+
+    Song Info:
+        """
+        # sp2.user_playlist_change_details(cfg.username, playlist_id, name=new_playlist_name, public=None, collaborative=None,description=description)
+        return summary
+
+
+    def format_source_result(self, results):
+        og_tracks = []
+        for entry in results['tracks']['items']:
+            artists = [prop['name'] for prop in entry['track']['artists']]
+            og_tracks.append({
+                'artist': artists,
+                'track': entry['track']['name'].replace('Instrumental', '')
+            })
+        return og_tracks
+
+
+    def interactive(self):
+        pass
+
+
+if __name__ == '__main__':
+    s = Samplify()
+    s.interactive()
+#from sample_finder import Samplify;from tools import direction as d;s = Samplify();s.playlist('https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw', d.contains_sample_of)

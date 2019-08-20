@@ -18,5 +18,5 @@ def get_paged_content_by_direction(direction):
         raise NotImplementedError('NO occurances of this endpoint have been found in testing. Refer to comment in direction.py for more detail')
     if direction == was_sampled_in:
         return 'sampled'
-    if direction == was_covered_in:
+    if direction == contains_sample_of:
         return 'samples'

@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import direction as direct
+from . import direction as direct
 
 class Scraper:
     """A scraper for whosampled
@@ -17,6 +17,7 @@ class Scraper:
         # whosampled; seems pretty unfriendly to block self.request's default headers.
         self.debug = debug
         self.direction = direction
+        self.base_url = 'https://whosampled.com'
         self.req = requests.Session()
         adapter = requests.adapters.HTTPAdapter(max_retries=10)
         self.req.mount('https://', adapter)
@@ -27,7 +28,7 @@ class Scraper:
         }
 
     def get_whosampled_playlist(self, loaded_playlist, direction=None):
-        """Main endpoint for Scraper
+        """ Main endpoint for Scraper
         loaded_playlist:
         - type is <list: dict>
         - [{"track": "School Boy Crush", "artist": "Average White Band"}, ...]
@@ -50,7 +51,7 @@ class Scraper:
         link = self.retrieve_song_link(song_title, artist_name)
         if not link:
             return None, None
-        samples, sampled_by = self.retrieve_samples_v2(song_title, link)
+        samples, sampled_by = self.retrieve_sample_details(song_title, link)
         return samples, sampled_by
 
     def retrieve_song_link(self, song_title, artist_name=None):
@@ -77,8 +78,8 @@ class Scraper:
         link = [i.a for i in search_results][0].get('href')
         return link
 
-    def retrieve_samples_v2(self, song_title, link):
-        """Gets sample details from top-level link
+    def retrieve_sample_details(self, song_title, link):
+        """ Gets sample details from top-level link
 
         link (str):
           e.g '/Kenny-Burrell/Midnight-Blue/'
@@ -86,7 +87,6 @@ class Scraper:
         - 'sampled' -> Was sampled in
         - 'samples' -> Contains samples of
 
-        TODO: handle paging
             - relevant pages only exist when # references > 5
             - paging query string can be '?sp=N' or '?cp=N'
             valid pages are:
@@ -96,10 +96,9 @@ class Scraper:
             worth trying next page until 404 is hit as a quick & dirty
             - 'The page you requested cannot be found' (UK-ENG)
 
-        TODO: embed direction by reading section header
           - e.g only parse items in 'Sampled By'
         """
-        url = f'https://www.whosampled.com{link}'
+        url = f'{self.base_url}{link}'
         s = self.req.get(url)
         page_detail = s.content
         soup = BeautifulSoup(page_detail, 'html.parser')
@@ -110,38 +109,35 @@ class Scraper:
         # - note; completely speculating
         listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
 
-        if self.debug:
-            # self.log() # FIXME: port this debug
-            pass
-
         if not listed:
             return [], []
         # NOTE: order is currently just assuming page renders as contains, was sampled in, remix, cover
         contains_samples_of = self.parse_sample_items(song_title=song_title,
                                                       sample_data=listed[0],
+                                                      link=link,
                                                       direction=direct.contains_sample_of)
         if not len(listed) > 2:
             return contains_samples_of, []
         was_sampled_in = self.parse_sample_items(song_title=song_title,
                                                  sample_data=listed[1],
+                                                 link=link,
                                                  direction=direct.was_sampled_in)
 
         return contains_samples_of, was_sampled_in
 
     def parse_sample_items(self, song_title, sample_data, direction, link, recursing=False):
-        """Gets detail from track summary listing
-        TODO: paging here: if len(raw_samples >= 5)
+        """ Gets detail from track summary listing
         """
         raw_samples =  [i.split('\n') for i in list(filter(None, sample_data.split('\t')))][:-1]
         parsed_samples = []
         if len(raw_samples) >= 5 and not recursing:
-            parsed_samples = \
+            parsed_sampled = \
                 parsed_samples + self.scrape_paged_content(song_title, direction, link)
 
         for sample in raw_samples:
-            # FIXME: maybe `if '(' in sample[-2]`
-            year = sample[-2].replace('by ', '').split(' (')[1].replace(')', '')
-            artist = sample[-2].replace('by ', '').split(' (')[0]
+            interim = sample[-2].replace('by ', '', 1).split(' (')
+            year = interim[1].replace(')', '')
+            artist = interim[0]
             parsed_samples.append({
                 'query': song_title,
                 'direction': direction,
@@ -151,72 +147,63 @@ class Scraper:
                 'artist':  artist,
                 'year': year
             })
-        # FIXME port this debug
-        if self.debug: print(f'parse_sample_items: {parsed_samples}')
+        if self.debug: self.log(f'parse_sample_items: {parsed_samples}')
         return parsed_samples
 
     def scrape_paged_content(self, song_title, direction, link):
         """Heads to scaped"""
-        base_url = f'{link}/{direct.get_paged_content_by_direction(direction=direction)}/'
+        paged_url = f'{self.base_url}{link}{direct.get_paged_content_by_direction(direction=direction)}/'
+        soup, samples = self.get_direction_content(
+            url=paged_url, song_title=song_title, direction=direction, recursing=True)
 
-        s = self.req.get(base_url)
-        page_detail = s.content
-        soup = BeautifulSoup(page_detail, 'html.parser')
-        # check if base paged content is 404
-        if 'The page you requested cannot be found' in str(soup):
-            return
+        if not soup:
+            return samples
         pagination = soup.findAll(
             'div', attrs={'class': "pagination"})
-
-        print('pagination')
-        print(pagination)
-        # handle single page of paged content, or n pages
-        page_link_cont = pagination[0].find_all('span')
-        if not len(page_link_cont) > 1:
-            listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
-            return self.parse_sample_items(song_title=song_title,
-                                           sample_data=listed[0],
-                                           direction=direction,
-                                           link=None,
-                                           recursing=True)
+        if not len(pagination) > 0:
+            return samples
 
         # get max page number
+        page_link_cont = pagination[0].find_all('span')
         page_links = [item.a.get('href') for item in page_link_cont if item.a is not None]
         last_link_num = int(page_links[-1].split('=')[1]) # maybe 'next'
         potential_max_link_num = int(page_links[-2].split('=')[1]) # maybe max page value
 
         tracks = []
-        # FIXME: kill duplication here - parts ripped from retrieve_samples_v2
         for page_number in range(1, max(last_link_num, potential_max_link_num)+1):
-            print(page_number)
-            url = f'{base_url}?cp={page_number}'
-            print(url)
-
-            s = self.req.get(url)
-            page_detail = s.content
-            new_soup = BeautifulSoup(page_detail, 'html.parser')
-            # check if base paged content is 404
-            if 'The page you requested cannot be found' in str(new_soup):
-                return
-            new_listed = [i.text for i in new_soup.findAll('div', attrs={'class': 'list bordered-list'})]
-            tracks = tracks + self.parse_sample_items(song_title=song_title,
-                                           sample_data=new_listed[0],
-                                           direction=direction,
-                                           link=None,
-                                           recursing=True)
+            url = f'{paged_url}?cp={page_number}'
+            soup, parsed = self.get_direction_content(
+                url=url, song_title=song_title, direction=direction, recursing=True)
+            tracks = tracks + parsed
         return tracks
 
-    def log(self, function, page_source, items, message):
-        """TODO"""
-        pass
+    def get_direction_content(self, url, song_title, direction, recursing=False):
+        s = self.req.get(url)
+        page_detail = s.content
+        soup = BeautifulSoup(page_detail, 'html.parser')
+        # check if base paged content is 404
+        if 'The page you requested cannot be found' in str(soup):
+            return None, []
+
+        listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
+        return soup, self.parse_sample_items(song_title=song_title,
+                                             sample_data=listed[0],
+                                             direction=direction,
+                                             link=None,
+                                             recursing=recursing)
+
+    def log(self, message, function=None, page_source=None):
         from time import time
+        print(f'''
+Message:  {message}
+        ''')
+        if not page_source:
+            return
         file_name = f'{time()}.{song_title}.html'
         with open(file_name, 'w+') as f:
-            print(f'stream open for {file_name}')
             f.write('<!-- SAMPLE PAGE CONTENT -->\n')
             f.write(str(soup))
             f.write(str(listed))
-
 
 
 # test `scrape_page_content` -> throw this oneliner into ipython & see
