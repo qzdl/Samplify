@@ -4,6 +4,7 @@ import direction as direct
 
 class Scraper:
     """A scraper for whosampled
+      - handles paging
       direction:
         - items defined in ./direction.py
         - collect *only* samples relevant to direction
@@ -98,8 +99,8 @@ class Scraper:
         TODO: embed direction by reading section header
           - e.g only parse items in 'Sampled By'
         """
-        url = f
-        s = self.req.get(f'https://www.whosampled.com{link}')
+        url = f'https://www.whosampled.com{link}'
+        s = self.req.get(url)
         page_detail = s.content
         soup = BeautifulSoup(page_detail, 'html.parser')
 
@@ -115,6 +116,7 @@ class Scraper:
 
         if not listed:
             return [], []
+        # NOTE: order is currently just assuming page renders as contains, was sampled in, remix, cover
         contains_samples_of = self.parse_sample_items(song_title=song_title,
                                                       sample_data=listed[0],
                                                       direction=direct.contains_sample_of)
@@ -153,7 +155,6 @@ class Scraper:
         if self.debug: print(f'parse_sample_items: {parsed_samples}')
         return parsed_samples
 
-
     def scrape_paged_content(self, song_title, direction, link):
         """Heads to scaped"""
         base_url = f'{link}/{direct.get_paged_content_by_direction(direction=direction)}/'
@@ -172,7 +173,6 @@ class Scraper:
         # handle single page of paged content, or n pages
         page_link_cont = pagination[0].find_all('span')
         if not len(page_link_cont) > 1:
-            print('\n\n\n\n\n bussing \n\n\n\n\n\n')
             listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
             return self.parse_sample_items(song_title=song_title,
                                            sample_data=listed[0],
@@ -185,8 +185,8 @@ class Scraper:
         last_link_num = int(page_links[-1].split('=')[1]) # maybe 'next'
         potential_max_link_num = int(page_links[-2].split('=')[1]) # maybe max page value
 
-        print(f'\n\n\n\n last:{last_link_num}\n\nmaybe max:{potential_max_link_num}\n\n\n\n')
         tracks = []
+        # FIXME: kill duplication here - parts ripped from retrieve_samples_v2
         for page_number in range(1, max(last_link_num, potential_max_link_num)+1):
             print(page_number)
             url = f'{base_url}?cp={page_number}'
@@ -204,10 +204,7 @@ class Scraper:
                                            direction=direction,
                                            link=None,
                                            recursing=True)
-        print('\n\n\n\n\n\n # of tracks\n\n\n\n\n\n')
-        print(len(set([i['title'] for i in tracks])))
         return tracks
-
 
     def log(self, function, page_source, items, message):
         """TODO"""
@@ -222,4 +219,5 @@ class Scraper:
 
 
 
-# from whosampled_scrape import Scraper; s = Scraper(); import direction as d; s.scrape_paged_content(direction=d.was_sampled_in, link='https://whosampled.com/nas/halftime')
+# test `scrape_page_content` -> throw this oneliner into ipython & see
+# from whosampled_scrape import Scraper; s = Scraper(); import direction as d; items = s.scrape_paged_content(direction=d.was_sampled_in, link='https://whosampled.com/nas/halftime')
