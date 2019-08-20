@@ -204,28 +204,29 @@ class Samplify:
             playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
         self.spot.user_playlist_add_tracks(
             options.username, playlist_id, sample_tracks['ids'], position=None)
+        self.generate_description(sample_data=sample_tracks, options=options)
 
-    def generate_description(self, samples):
+    def generate_description(self, sample_data, options):
         """
         Gives some information on the playlist.
-
         """
         # sample_title, sample_artist, direction, source_artist, source_title
         song_template = '\n    {0}, by {1}. {2} by {3} in {4}'
         unfound = str.join('\n', spot_dict['unfound'])
         rate = round(spot_dict['rate'], 3)
         description_template = f"""
-    This playlist was generated from the {source_type}: {source_name}.
-        For more information, head to https://github.com/qzdl/samplify
+This playlist was generated from the {source_type}: {source_name}.
+    For more information, head to https://github.com/qzdl/samplify
 
-    Percentage Matched:
-        {rate}
+Percentage Matched:
+    {rate}
 
-    Songs with no match:
-        {unfound}
+Songs with no match:
+    {unfound}
 
-    Song Info:
+Song Info:
         """
+
         # sp2.user_playlist_change_details(cfg.username, playlist_id, name=new_playlist_name, public=None, collaborative=None,description=description)
         return summary
 
