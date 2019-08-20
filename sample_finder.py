@@ -75,7 +75,7 @@ class Samplify:
 
         spotify_dict = self.get_sample_spotify_tracks(sample_data)
         self.populate_output(options=options,
-                             sample_data=spotify_dict)
+                             sample_tracks=spotify_dict)
         print(f'Created playlist {output_name}')
 
 
@@ -162,15 +162,13 @@ class Samplify:
     def get_sample_spotify_tracks(self, sample_tracks):
         """ Searches spotify for sample tracks """
         if self.debug: self.log('Checking Spotify for Samples')
-        for track in sample_tracks:
-            print(track['title'] + ' by ' + track['artist'])
 
         id_list = []
         unfound_list = []
         for track in sample_tracks:
             sub_list = []
             artist = track['artist'].lower()
-            print(f'searching for {track[title]}')
+            print(f'searching for {track["title"]}')
             result = self.spot.search(track['title'],
                                       limit=10)['tracks']['items']
             for entry in result:
@@ -183,8 +181,8 @@ class Samplify:
             else:        # no hit
                 unfound_list.append((track['title'] + ' by ' + artist))
 
-        find_rate = 1 - len(unfound_list) / len(sampled_tracks)
-        if self.debug: self.log(f'Rate of tracks found: {find_rate}')
+        find_rate = 1 - len(unfound_list) / len(sample_tracks)
+        print(f'Rate of tracks found: {find_rate}')
         return {'ids': id_list, 'unfound': unfound_list, 'rate': find_rate}
 
     def get_sample_data(self, source_songs):
@@ -194,15 +192,15 @@ class Samplify:
 
     def populate_output(self, options, sample_tracks):
         playlist_id = 0
-        if options.output_type == APPEND_ONLY or \
-           options.output_type == APPEND_OR_CREATE:
+        if options.output_type == options.APPEND_ONLY or \
+           options.output_type == options.APPEND_OR_CREATE:
             # search for user playlist where output_name == playlist name
             raise NotImplemented("Functionality not supported yet")
 
-        if options.output_type == CREATE_ONLY and playlist_id == 0:
+        if options.output_type == options.CREATE_ONLY and playlist_id == 0:
             # create playlist, then retrieve id
             playlist = self.spot.user_playlist_create(options.username,
-                                                      f'SAMPLIFY: {output_name}')
+                                                      f'SAMPLIFY: {options.output_name}')
             playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
         self.spot.user_playlist_add_tracks(
             options.username, playlist_id, sample_tracks['ids'], position=None)
