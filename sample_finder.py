@@ -23,10 +23,6 @@ CREATE_ONLY = 'w'
 APPEND_ONLY = 'a'
 APPEND_OR_CREATE = 'a+'
 
-#==[ direction type ]===============#
-SAMPLED_BY = 'sampled_by'
-USES_SAMPLE = 'uses_sample'
-
 def get_token(scope='playlist-modify-public'):
     token = util.prompt_for_user_token(cfg.username,
                                        scope,
