@@ -84,7 +84,7 @@ class Samplify:
         # scope required?
         options = Options()
         options.generate(
-            reference=reference,
+            reference=None,
             direction=direction,
             content_type=options.CURRENT_SONG,
             output_name=output_name,
@@ -147,17 +147,38 @@ class Samplify:
             Returns:
               <list>
         """
-        results = {}
+        results = []
+        track_key = 'track'
         if options.content_type == options.PLAYLIST:
             results = self.spot.user_playlist(options.username, options.reference)
         if options.content_type == options.ALBUM:
             results = self.spot.album_tracks(options.reference)
+            track_key = 'tracks'
+            # TODO: parser for albums
+            # album = None
+            # with open('test_payload_f.json', 'r') as f:
+            #     import json
+            #     album = json.loads(f.read())
+
+            # album_ttle = album['name']
+            # artist = album['artists'][0]['name']
+            # tracks = album['tracks']['items']
+
+            # track_info = []
+            # for track in tracks:
+            #     info = {}
+            #     info['title'] = track['name']
+            #     info['uri'] = track['uri']
+            #     track_info.append(info)
+
+            # print(json.dumps(track_info, indent=2))
+
         if options.content_type == options.SONG:
             results.append(self.spot.track(options.reference))
         if options.content_type == options.CURRENT_SONG:
-            results.append(self.spot.curent_user_playing_track())
+            results.append(self.spot._get("me/player/currently-playing", market=None))
 
-        return self.format_source_result(results)
+        return self.format_source_result(results, track_key)
 
     def get_sample_spotify_tracks(self, sample_tracks):
         """ Searches spotify for sample tracks """
@@ -231,7 +252,7 @@ Song Info:
         return summary
 
 
-    def format_source_result(self, results):
+    def format_source_result(self, results, track_key):
         og_tracks = []
         for entry in results['tracks']['items']:
             artists = [prop['name'] for prop in entry['track']['artists']]
