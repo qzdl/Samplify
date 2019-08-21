@@ -33,7 +33,6 @@ username = '1134745600'
 
 # setup this redirect on a registered application. make sure it
 # is identical to the letter or you'll get "INVALID REDIRECT"
-
 redirect = 'http://localhost:8889'
 ```
 
@@ -80,10 +79,8 @@ for track in tracks:
 
 print(json.dumps(track_info, indent=2))
 ```
-## Future Development: Notes from cpease00
-The next steps in this project will be to implement a recommendation system,
-which will add new music to the library based on the samples contained in my favorite songs.
-This is also an excuse for me to try out different machine learning techniques to achieve this goal.
 
-## Contact
-For any questions/suggestions, please email [chris.m.pease@gmail.com](mailto:chris.m.pease@gmail.com)
+## Notes
+This project is based on the work of [Christopher Pease (cpease00)](https://github.com/cpease00/)'s sample collection tool [Spotify-Samples](https://github.com/cpease00/).
+Without his [medium article]() on the topic, I would have had a bunch  
+more pain to go through in producing the project as it is now.
