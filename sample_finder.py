@@ -226,7 +226,6 @@ class Samplify:
         if options.output_type == options.CREATE_ONLY and playlist_id == 0:
             # create playlist, then retrieve id
 
-            print(self.spot.user_playlist_create.__doc__)
             playlist = self.spot.user_playlist_create(
                 user=options.username, name=playlist_name,
                 public=False, # FIXME: allow private playlists
@@ -271,8 +270,5 @@ if __name__ == '__main__':
 
     s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg',
             direction=d.contains_sample_of)
-
-    s.playlist(reference='https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw',
-               direction=d.contains_sample_of)
 
 #from sample_finder import Samplify;from tools import direction as d;s = Samplify();s.playlist('https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw', d.contains_sample_of)
