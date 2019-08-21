@@ -148,63 +148,61 @@ class Samplify:
               <list>
         """
         results = []
-        track_key = 'track'
+        track_parser = lambda track: track
         if options.content_type == options.PLAYLIST:
             results = self.spot.user_playlist(options.username, options.reference)
+            track_parser = lambda track: track['track']
+
         if options.content_type == options.ALBUM:
             results = self.spot.album_tracks(options.reference)
             track_key = 'tracks'
-            # TODO: parser for albums
-            # album = None
-            # with open('test_payload_f.json', 'r') as f:
-            #     import json
-            #     album = json.loads(f.read())
-
-            # album_ttle = album['name']
-            # artist = album['artists'][0]['name']
-            # tracks = album['tracks']['items']
-
-            # track_info = []
-            # for track in tracks:
-            #     info = {}
-            #     info['title'] = track['name']
-            #     info['uri'] = track['uri']
-            #     track_info.append(info)
-
-            # print(json.dumps(track_info, indent=2))
 
         if options.content_type == options.SONG:
             results.append(self.spot.track(options.reference))
+
         if options.content_type == options.CURRENT_SONG:
+            # FIXME: Spotipy API from package doesn't contain `current_song` function
             results.append(self.spot._get("me/player/currently-playing", market=None))
 
-        return self.format_source_result(results, track_key)
+        return self.format_source_result(results, track_parser, options)
+
+    def format_source_result(self, results, track_parser, options):
+        og_tracks = []
+        options.parent_name = results['name']
+        for entry in results['tracks']['items']:
+            track = track_parser(entry)
+            artists = [prop['name'] for prop in track['artists']]
+            og_tracks.append({
+                'artist': artists,
+                'track': track['name'].replace('Instrumental', '')
+            })
+        return og_tracks
 
     def get_sample_spotify_tracks(self, sample_tracks):
         """ Searches spotify for sample tracks """
         if self.debug: self.log('Checking Spotify for Samples')
 
-        id_list = []
-        unfound_list = []
+        found_songs = []  # matches append {'detail': foo, 'id': bar}
+        unfound_list = [] # this is just a 1dim list
         for track in sample_tracks:
             sub_list = []
-            artist = track['artist'].lower()
-            print(f'searching for {track["title"]}')
-            result = self.spot.search(track['title'],
+            title = track['title']
+            artist = track['artist']
+            detail = f'{track["query"]} -> {title}, by {artist}'
+            result = self.spot.search(title,
                                       limit=10)['tracks']['items']
-            for entry in result:
-                if entry['artists'][0]['name'].lower() == artist:
-                    sub_list.append(entry['id'])
+            for entry in result: # iter search results for first artist match
+                if entry['artists'][0]['name'].lower() == artist.lower():
+                    sub_list.append({'detail': detail, 'id': entry['id']})
                     break
 
             if sub_list: # hit
-                id_list.append(sub_list[0])
+                found_songs.append(sub_list[0])
             else:        # no hit
-                unfound_list.append((track['title'] + ' by ' + artist))
+                unfound_list.append(detail)
 
         find_rate = 1 - len(unfound_list) / len(sample_tracks)
-        print(f'Rate of tracks found: {find_rate}')
-        return {'ids': id_list, 'unfound': unfound_list, 'rate': find_rate}
+        return {'found': found_songs, 'unfound': unfound_list, 'rate': find_rate}
 
     def get_sample_data(self, source_songs):
         new_playlist_tracks = self.scraper.get_whosampled_playlist(source_songs)
@@ -213,6 +211,13 @@ class Samplify:
 
     def populate_output(self, options, sample_tracks):
         playlist_id = 0
+        playlist_name = \
+            options.output_name if options.output_name \
+                                else f'SAMPLIFY: {options.parent_name}'
+        description = self.generate_description(
+            sample_data=sample_tracks, options=options)
+        if self.debug: print(description)
+
         if options.output_type == options.APPEND_ONLY or \
            options.output_type == options.APPEND_OR_CREATE:
             # search for user playlist where output_name == playlist name
@@ -220,54 +225,54 @@ class Samplify:
 
         if options.output_type == options.CREATE_ONLY and playlist_id == 0:
             # create playlist, then retrieve id
-            playlist = self.spot.user_playlist_create(options.username,
-                                                      f'SAMPLIFY: {options.output_name}')
+
+            print(self.spot.user_playlist_create.__doc__)
+            playlist = self.spot.user_playlist_create(
+                user=options.username, name=playlist_name,
+                public=False, # FIXME: allow private playlists
+                description=description)
             playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
+
+        ids = [track['id'] for track in sample_tracks['found']]
         self.spot.user_playlist_add_tracks(
-            options.username, playlist_id, sample_tracks['ids'], position=None)
-        self.generate_description(sample_data=sample_tracks, options=options)
+            options.username, playlist_id, ids, position=None)
 
     def generate_description(self, sample_data, options):
         """
         Gives some information on the playlist.
         """
-        # sample_title, sample_artist, direction, source_artist, source_title
-        song_template = '\n    {0}, by {1}. {2} by {3} in {4}'
-        unfound = str.join('\n', spot_dict['unfound'])
-        rate = round(spot_dict['rate'], 3)
-        description_template = f"""
-This playlist was generated from the {source_type}: {source_name}.
+        print(sample_data)
+        join = lambda lst: str.join('''
+
+        ''', lst)
+        unfound = join(sample_data['unfound'])
+        found = join([track['detail'] for track in sample_data['found']])
+        rate = round(sample_data['rate'], 3)*100
+
+        description = f'''
+This playlist was generated from the samples {options.direction.lower()}: {options.parent_name}.
     For more information, head to https://github.com/qzdl/samplify
 
-Percentage Matched:
-    {rate}
+Percentage Matched: {rate}%
 
 Songs with no match:
     {unfound}
 
-Song Info:
-        """
-
-        # sp2.user_playlist_change_details(cfg.username, playlist_id, name=new_playlist_name, public=None, collaborative=None,description=description)
-        return summary
-
-
-    def format_source_result(self, results, track_key):
-        og_tracks = []
-        for entry in results['tracks']['items']:
-            artists = [prop['name'] for prop in entry['track']['artists']]
-            og_tracks.append({
-                'artist': artists,
-                'track': entry['track']['name'].replace('Instrumental', '')
-            })
-        return og_tracks
-
-
-    def interactive(self):
-        pass
+Sampling Info:
+    {found}
+        '''
+        print(description)
+        return description
 
 
 if __name__ == '__main__':
-    s = Samplify()
-    s.interactive()
+    from tools import direction as d
+    s = Samplify();
+
+    s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg',
+            direction=d.contains_sample_of)
+
+    s.playlist(reference='https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw',
+               direction=d.contains_sample_of)
+
 #from sample_finder import Samplify;from tools import direction as d;s = Samplify();s.playlist('https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw', d.contains_sample_of)

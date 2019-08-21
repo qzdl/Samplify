@@ -60,6 +60,26 @@ BeautifulSoup is used to scrape HTML for sample names, which are also stored.
 Next, the samples are located using Spotipy, if they exist. Finally, a new
 playlist is created for the user, containing all the samples available on Spotify.
 
+## Example Route Parsing
+```python
+album = None
+with open('test_payload_f.json', 'r') as f:
+    import json
+    album = json.loads(f.read())
+
+album_ttle = album['name']
+artist = album['artists'][0]['name']
+tracks = album['tracks']['items']
+
+track_info = []
+for track in tracks:
+    info = {}
+    info['title'] = track['name']
+    info['uri'] = track['uri']
+    track_info.append(info)
+
+print(json.dumps(track_info, indent=2))
+```
 ## Future Development: Notes from cpease00
 The next steps in this project will be to implement a recommendation system,
 which will add new music to the library based on the samples contained in my favorite songs.
