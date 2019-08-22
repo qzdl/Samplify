@@ -26,7 +26,7 @@ class Options:
        self.APPEND_ONLY = 'a'
        self.APPEND_OR_CREATE = 'a+'
 
-    def generate(self, reference, direction, content_type=None, scope=None,
+    def generate(self, reference, direction=None, content_type=None, scope=None,
                  output_name=None, output_type=None, username=None):
         """Request-wise options object
         direction:
@@ -44,7 +44,7 @@ class Options:
             default=create_only
         """
         self.reference = reference
-        self.direction = direction
+        self.direction = direction if direction else d.contains_sample_of
         if content_type:
             self.content_type = content_type
         else:
@@ -79,9 +79,10 @@ class Samplify:
         self.populate_output(options=options,
                              sample_tracks=spotify_dict)
         print(f'Created playlist {options.playlist_name}')
+        return self.spot
 
 
-    def current_song(self, direction, output_name=None, output_type=None):
+    def current_song(self, direction=None, output_name=None, output_type=None):
         """API for E2E rip of sample data from current song playing"""
         # scope required?
         options = Options()
@@ -94,7 +95,7 @@ class Samplify:
         )
         return self.samplify(options)
 
-    def song(self, reference, direction, output_name=None, output_type=None):
+    def song(self, reference, direction=None, output_name=None, output_type=None):
         """API for E2E rip of sample data from song"""
         options = Options()
         options.generate(
@@ -106,7 +107,7 @@ class Samplify:
         )
         return self.samplify(options)
 
-    def album(self, reference, direction, output_name=None, output_type=None):
+    def album(self, reference, direction=None, output_name=None, output_type=None):
         """API for E2E rip of sample data from album"""
         options = Options()
         options.generate(
@@ -118,7 +119,7 @@ class Samplify:
         )
         return self.samplify(options)
 
-    def playlist(self, reference, direction, output_name=None,
+    def playlist(self, reference, direction=None, output_name=None,
                  output_type=None, username=None):
         options = Options()
         options.generate(
@@ -293,7 +294,9 @@ if __name__ == '__main__':
     from tools import direction as d
     s = Samplify();
 
-    s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg',
-            direction=d.contains_sample_of)
+    # Train of Thought, Reflection Eternal
+    s.album(reference='https://open.spotify.com/album/2PbWFmysd3j9MEacjjhozx?si=wbP_n3BZS8yqaSRM2opvVQ')
+    # Daydream, Mariah Carey
+    # s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg)
 
 #from sample_finder import Samplify;from tools import direction as d;s = Samplify();s.playlist('https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw', d.contains_sample_of)
