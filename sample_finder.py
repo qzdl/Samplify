@@ -76,7 +76,7 @@ class Samplify:
         spotify_dict = self.get_sample_spotify_tracks(sample_data)
         self.populate_output(options=options,
                              sample_tracks=spotify_dict)
-        print(f'Created playlist {output_name}')
+        print(f'Created playlist {options.playlist_name}')
 
 
     def current_song(self, direction, output_name=None, output_type=None):
@@ -214,6 +214,7 @@ class Samplify:
         playlist_name = \
             options.output_name if options.output_name \
                                 else f'SAMPLIFY: {options.parent_name}'
+        options.playlist_name = playlist_name
         description = self.generate_description(
             sample_data=sample_tracks, options=options)
         if self.debug: print(description)
@@ -228,37 +229,44 @@ class Samplify:
 
             playlist = self.spot.user_playlist_create(
                 user=options.username, name=playlist_name,
-                public=False, # FIXME: allow private playlists
-                description=description)
+                public=True) # FIXME: allow private playlists
             playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
 
         ids = [track['id'] for track in sample_tracks['found']]
+
         self.spot.user_playlist_add_tracks(
             options.username, playlist_id, ids, position=None)
+        self.spot.user_playlist_change_details(
+            playlist_id=playlist_id,description=description)
 
     def generate_description(self, sample_data, options):
         """
         Gives some information on the playlist.
+        - Descriptions in spotify are 300 chars
         """
         print(sample_data)
         join = lambda lst: str.join('''
-
-        ''', lst)
+''', lst)
         unfound = join(sample_data['unfound'])
         found = join([track['detail'] for track in sample_data['found']])
         rate = round(sample_data['rate'], 3)*100
 
         description = f'''
-This playlist was generated from the samples {options.direction.lower()}: {options.parent_name}.
-    For more information, head to https://github.com/qzdl/samplify
+# {options.playlist_name}
+
+This playlist was generated using Samplify.
+Github: https://github.com/qzdl/samplify
+
+The {options.content_type}, {options.parent_name}, has been broken down into:
+"{options.direction.lower()}"
 
 Percentage Matched: {rate}%
 
 Songs with no match:
-    {unfound}
+{unfound}
 
-Sampling Info:
-    {found}
+Sample Info:
+{found}
         '''
         print(description)
         return description
