@@ -1,2 +1,3 @@
 BeautifulSoup4
+fuzzywuzzy==0.17.0
 git+https://github.com/qzdl/spotipy.git

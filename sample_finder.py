@@ -1,10 +1,12 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-import json
 from spotipy.util import prompt_for_user_token
 from spotipy import util
+from fuzzywuzzy import fuzz
 from tools.whosampled_scrape import Scraper
+from tools import direction as d
 import config as cfg
+import json
 
 #==[ link types ]===================#
 URI = 'uri' # spotify:album:2laBNOqPW85M3js7qCYhKt
@@ -182,24 +184,33 @@ class Samplify:
         """ Searches spotify for sample tracks """
         if self.debug: self.log('Checking Spotify for Samples')
 
-        found_songs = []  # matches append {'detail': foo, 'id': bar}
-        unfound_list = [] # this is just a 1dim list
+        found_songs = []  # matches append {'detail': foo, 'search_query': baz, 'id': bar}
+        unfound_list = [] # this is just a one-dimensional list
         for track in sample_tracks:
             sub_list = []
             title = track['title']
             artist = track['artist']
+            null = lambda s, ss: s.replace(ss, ' ')
+            s_artist = null(null(null(null(null(artist.lower(), '.'), '&'), 'feat'), 'the'), ' and ')
             detail = f'{track["query"]} -> {title}, by {artist}'
-            result = self.spot.search(title,
+            search_query = f'{title} {s_artist}'
+            result = self.spot.search(search_query,
                                       limit=10)['tracks']['items']
-            for entry in result: # iter search results for first artist match
-                if entry['artists'][0]['name'].lower() == artist.lower():
-                    sub_list.append({'detail': detail, 'id': entry['id']})
+            for entry in result: # iter search results for first artist fuzzy match
+                search_artist = entry['artists'][0]['name'].lower()
+                if fuzz.token_set_ratio(search_artist, artist) > 90:
+                    sub_list.append({
+                        'detail': detail,
+                        'search_query': search_query,
+                        'id': entry['id']
+                    })
                     break
 
             if sub_list: # hit
                 found_songs.append(sub_list[0])
             else:        # no hit
-                unfound_list.append(detail)
+                unfound_list.append({'detail': detail, 'search_query': search_query})
+
 
         find_rate = 1 - len(unfound_list) / len(sample_tracks)
         return {'found': found_songs, 'unfound': unfound_list, 'rate': find_rate}
@@ -245,10 +256,12 @@ class Samplify:
         - Descriptions in spotify are 300 chars
         """
         print(sample_data)
-        join = lambda lst: str.join('''
-''', lst)
-        unfound = join(sample_data['unfound'])
-        found = join([track['detail'] for track in sample_data['found']])
+        join = lambda key, sub_key: str.join('''
+''', [track[sub_key] for track in sample_data[key]])
+        unfound = join('unfound', 'detail')
+        u_searches = join('unfound', 'search_query')
+        found = join('found', 'detail')
+        f_searches = join('found', 'search_query')
         rate = round(sample_data['rate'], 3)*100
 
         description = f'''
@@ -264,9 +277,13 @@ Percentage Matched: {rate}%
 
 Songs with no match:
 {unfound}
+==> search terms:
+{u_searches}
 
 Sample Info:
 {found}
+==> search terms:
+{f_searches}
         '''
         print(description)
         return description
