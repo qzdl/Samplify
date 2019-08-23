@@ -2,7 +2,7 @@
 
 
 ## Getting Started
-Setup TLDR; `git clone https://github.com/cpease00/spotify-samples.git && cd spotify-samples && conda env create -f environment.yml`
+Setup TLDR; `git clone https://github.com/qzdl/samplify.git && cd spotify-samples && conda env create -f environment.yml`
 
 - Ensure some form of [conda](https://https://docs.conda.io/en/latest/miniconda.html) is installed.
 - Clone this repo with `git clone https://github.com/cpease00/spotify-samples.git`
@@ -82,5 +82,5 @@ print(json.dumps(track_info, indent=2))
 
 ## Notes
 This project is based on the work of [Christopher Pease (cpease00)](https://github.com/cpease00/)'s sample collection tool [Spotify-Samples](https://github.com/cpease00/).
-Without his [medium article]() on the topic, I would have had a bunch  
+Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic, I would have had a bunch  
 more pain to go through in producing the project as it is now.
