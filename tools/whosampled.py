@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from . import direction as direct
 
 class Scraper:
-    """A scraper for whosampled
+    """ A scraper for whosampled
       - handles paging
       direction:
         - items defined in ./direction.py
@@ -40,21 +40,21 @@ class Scraper:
         new_playlist = []
         for i in loaded_playlist:
             print(i['track'] + ' by ' + i['artist'][0])
-            samples, sampled_by = self.getme_thesamples(i['track'], i['artist'][0])
+            samples, sampled_by = self.get_samples(i['track'], i['artist'][0])
             if samples:
                 new_playlist.append(samples)
         lst = [i for j in new_playlist for i in j] # what the fuck
         return lst
 
-    def getme_thesamples(self, song_title, artist_name):
+    def get_samples(self, song_title, artist_name):
         """Retrieves sample detail for individual song"""
-        link = self.retrieve_song_link(song_title, artist_name)
+        link = self.search(song_title, artist_name)
         if not link:
             return None, None
-        samples, sampled_by = self.retrieve_sample_details(song_title, link)
+        samples, sampled_by = self.get_sample_details(song_title, link)
         return samples, sampled_by
 
-    def retrieve_song_link(self, song_title, artist_name=None):
+    def search(self, song_title, artist_name=None):
         """queries for song, returns relevant links
            FIXME refinements to how strict this is
              - aka make it find tighter matches at the search level
@@ -78,7 +78,7 @@ class Scraper:
         link = [i.a for i in search_results][0].get('href')
         return link
 
-    def retrieve_sample_details(self, song_title, link):
+    def get_sample_details(self, song_title, link):
         """ Gets sample details from top-level link
 
         link (str):

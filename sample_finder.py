@@ -3,7 +3,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.util import prompt_for_user_token
 from spotipy import util
 from fuzzywuzzy import fuzz
-from tools.whosampled_scrape import Scraper
+from tools.whosampled import Scraper
 from tools import direction as d
 import config as cfg
 import json
@@ -105,11 +105,14 @@ class Samplify:
                                   limit=50)
 
         tree_obj = objectpath.Tree(result)
-        search_mod = '.album' if content_type == options.ALBUM else ''
+        search_mod = '.album' if options.type_is_album(options.ALBUM) else ''
         query = f'$.tracks.items{search_mod}.(name, uri)'
-        options.parent_name, reference = tuple(tree_obj.execute(query))[0] # get top result
-        print()
-        print(options.parent_name, reference)
+        # options.parent_name, reference = \
+        queried = \
+            json.loads(json.dumps(tuple(tree_obj.execute(query))))[0] # get top result
+
+        options.parent_name = queried['name']
+        reference = queried['uri']
 
         if self.debug: self.log(message='from_search',
                                 content=('json', search_result))
@@ -117,10 +120,11 @@ class Samplify:
         options.generate(
             reference=reference,
             direction=direction,
-            content_type=options.CURRENT_SONG,
+            content_type=content_type,
             output_name=output_name,
             output_type=output_type
         )
+        return self.samplify(options)
 
     def current_song(self, direction=None, output_name=None, output_type=None):
         """API for E2E rip of sample data from current song playing"""
@@ -197,8 +201,7 @@ class Samplify:
             track_parser = lambda track: track['track']
 
         if options.content_type == options.ALBUM:
-            results = self.spot.album_tracks(options.reference)
-            track_key = 'tracks'
+            results = self.spot.album(options.reference)
 
         if options.content_type == options.SONG:
             results.append(self.spot.track(options.reference))
@@ -415,16 +418,14 @@ if __name__ == '__main__':
             output_type=args.output_type,
             username=args.username
         )
-
-    if options.type_is_album(args.content_type):
+    elif  options.type_is_album(args.content_type):
         result = samplify.album(
             reference=args.link,
             direction=args.direction,
             output_name=args.output_name,
             output_type=args.output_type
         )
-
-    if options.type_is_song(args.content_type):
+    elif options.type_is_song(args.content_type):
         result = samplify.song(
             reference=args.link,
             direction=args.direction,
@@ -432,8 +433,7 @@ if __name__ == '__main__':
             output_type=args.output_type,
             username=args.username
         )
-
-    if options.type_is_current_song(args.content_type):
+    elif options.type_is_current_song(args.content_type):
         result = samplify.current_song(
             reference=args.link,
             direction=args.direction,
@@ -441,11 +441,3 @@ if __name__ == '__main__':
             output_type=args.output_type,
             username=args.username
         )
-
-
-    # Train of Thought, Reflection Eternal
-    # s.album(reference='https://open.spotify.com/album/2PbWFmysd3j9MEacjjhozx?si=wbP_n3BZS8yqaSRM2opvVQ')
-    # Daydream, Mariah Carey
-    # s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg)
-
-#from sample_finder import Samplify;from tools import direction as d;s = Samplify();s.playlist('https://open.spotify.com/playlist/629QKIyhBqKaiPDWNHfw2z?si=QHtiuqNTRtWCGOAdRyiLhw', d.contains_sample_of)
