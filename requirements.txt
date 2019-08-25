@@ -1,4 +1,5 @@
 BeautifulSoup4
+objectpath==0.6.1
 fuzzywuzzy==0.17.0
 python-Levenshtein==0.12.0
 git+https://github.com/qzdl/spotipy.git

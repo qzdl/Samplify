@@ -7,6 +7,7 @@ from tools.whosampled_scrape import Scraper
 from tools import direction as d
 import config as cfg
 import json
+import objectpath
 
 #==[ link types ]===================#
 URI = 'uri' # spotify:album:2laBNOqPW85M3js7qCYhKt
@@ -14,7 +15,7 @@ HTTP = 'http' # https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZ
 
 class Options:
     def __init__(self):
-       # source typesj
+       # source types
        self.PLAYLIST = 'playlist'
        self.ALBUM = 'album'
        self.ARTIST = 'artist'
@@ -25,6 +26,21 @@ class Options:
        self.CREATE_ONLY = 'w'
        self.APPEND_ONLY = 'a'
        self.APPEND_OR_CREATE = 'a+'
+
+    def type_is_playlist(self, content_type):
+        return content_type == self.PLAYLIST
+
+    def type_is_album(self, content_type):
+        return content_type == self.ALBUM
+
+    def type_is_artist(self, content_type):
+        return content_type == self.ALBUM
+
+    def type_is_song(self, content_type):
+        return content_type == self.SONG
+
+    def type_is_current_song(self, content_type):
+        return content_type == self.CURRENT_SONG
 
     def generate(self, reference, direction=None, content_type=None, scope=None,
                  output_name=None, output_type=None, username=None):
@@ -81,6 +97,30 @@ class Samplify:
         print(f'Created playlist {options.playlist_name}')
         return self.spot
 
+
+    def from_search(self, search_term, content_type, direction=None, output_name=None, output_type=None):
+        # FIXME: generalise search from get_sample_spotify_tracks
+        options = Options()
+        result = self.spot.search(search_term,
+                                  limit=50)
+
+        tree_obj = objectpath.Tree(result)
+        search_mod = '.album' if content_type == options.ALBUM else ''
+        query = f'$.tracks.items{search_mod}.(name, uri)'
+        options.parent_name, reference = tuple(tree_obj.execute(query))[0] # get top result
+        print()
+        print(options.parent_name, reference)
+
+        if self.debug: self.log(message='from_search',
+                                content=('json', search_result))
+
+        options.generate(
+            reference=reference,
+            direction=direction,
+            content_type=options.CURRENT_SONG,
+            output_name=output_name,
+            output_type=output_type
+        )
 
     def current_song(self, direction=None, output_name=None, output_type=None):
         """API for E2E rip of sample data from current song playing"""
@@ -192,7 +232,8 @@ class Samplify:
             title = track['title']
             artist = track['artist']
             null = lambda s, ss: s.replace(ss, ' ')
-            s_artist = null(null(null(null(null(artist.lower(), '.'), '&'), 'feat'), 'the'), ' and ')
+            s_artist = \
+                null(null(null(null(null(artist.lower(), '&'), ' feat '), ' feat. '), ' the '), ' and ')
             detail = f'{track["query"]} -> {title}, by {artist}'
             search_query = f'{title} {s_artist}'
             result = self.spot.search(search_query,
@@ -251,6 +292,14 @@ class Samplify:
         self.spot.user_playlist_change_details(
             playlist_id=playlist_id,description=description)
 
+    def log(self, message, content):
+        from time import time
+        log_type, payload = content
+        if log_type == 'json':
+            payload = json.dumps(payload, indent=4)
+        with open(f'{message}.{time()}.{log_type}', 'w+') as f:
+            f.write(payload)
+
     def generate_description(self, sample_data, options):
         """
         Gives some information on the playlist.
@@ -278,11 +327,13 @@ Percentage Matched: {rate}%
 
 Songs with no match:
 {unfound}
+
 ==> search terms:
 {u_searches}
 
 Sample Info:
 {found}
+
 ==> search terms:
 {f_searches}
         '''
@@ -291,11 +342,109 @@ Sample Info:
 
 
 if __name__ == '__main__':
-    from tools import direction as d
-    s = Samplify();
+    options = Options()
+    import argparse
+    parser = argparse.ArgumentParser()
+    reference_group = parser.add_mutually_exclusive_group(required=True)
+    reference_group.add_argument(
+        '-l',
+        '--link',
+        help='Click "Share" > "Copy Link"'
+    )
+    reference_group.add_argument(
+        '-s',
+        '--search',
+        help='Search as you would in the app'
+    )
+
+    content_group = parser.add_mutually_exclusive_group(required=True)
+    content_group.add_argument(
+        '--album',
+        action="store_const",
+        const=options.ALBUM,
+        dest='content_type'
+    )
+    content_group.add_argument(
+        '--playlist',
+        action="store_const",
+        const=options.PLAYLIST,
+        dest='content_type'
+    )
+    content_group.add_argument(
+        '--song',
+        action="store_const",
+        const=options.SONG,
+        dest='content_type'
+    )
+    # FIXME: current song can't work with '--search'
+    content_group.add_argument(
+        '--current-song',
+        action="store_const",
+        const=options.CURRENT_SONG,
+        dest='content_type'
+    )
+
+    parser.add_argument("--direction")
+    parser.add_argument("--output-name")
+    parser.add_argument("--output-type")
+    parser.add_argument("--username")
+    args = parser.parse_args()
+    print('parsed args')
+    print(args)
+
+    default_options = Options()
+    samplify = Samplify();
+    result = None
+
+
+    if args.search:
+        result = samplify.from_search(
+            search_term=args.search,
+            direction=args.direction,
+            content_type=args.content_type,
+            output_name=args.output_name,
+            output_type=args.output_type
+        )
+
+
+    if options.type_is_playlist(args.content_type):
+        result = samplify.playlist(
+            reference=args.link,
+            direction=args.direction,
+            output_name=args.output_name,
+            output_type=args.output_type,
+            username=args.username
+        )
+
+    if options.type_is_album(args.content_type):
+        result = samplify.album(
+            reference=args.link,
+            direction=args.direction,
+            output_name=args.output_name,
+            output_type=args.output_type
+        )
+
+    if options.type_is_song(args.content_type):
+        result = samplify.song(
+            reference=args.link,
+            direction=args.direction,
+            output_name=args.output_name,
+            output_type=args.output_type,
+            username=args.username
+        )
+
+    if options.type_is_current_song(args.content_type):
+        result = samplify.current_song(
+            reference=args.link,
+            direction=args.direction,
+            output_name=args.output_name,
+            output_type=args.output_type,
+            username=args.username
+        )
+
 
     # Train of Thought, Reflection Eternal
-    s.album(reference='https://open.spotify.com/album/2PbWFmysd3j9MEacjjhozx?si=wbP_n3BZS8yqaSRM2opvVQ')
+    # s.album(reference='https://open.spotify.com/album/2PbWFmysd3j9MEacjjhozx?si=wbP_n3BZS8yqaSRM2opvVQ')
     # Daydream, Mariah Carey
     # s.album(reference='https://open.spotify.com/album/1ibYM4abQtSVQFQWvDSo4J?si=Gfgo2ZT5Sy2yYzLJZx2iGg)
 
