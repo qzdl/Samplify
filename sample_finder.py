@@ -1,121 +1,71 @@
+import json
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.util import prompt_for_user_token
 from spotipy import util
 from fuzzywuzzy import fuzz
-from tools.whosampled import Scraper
-from tools import direction as d
-import config as cfg
-import json
 import objectpath
+
+from tools.whosampled import Scraper
+from tools.options import Options
+from tools.logger import Logger
+from tools import direction as d
+
+import config as cfg
 
 # uri => spotify:album:2laBNOqPW85M3js7qCYhKt
 # http => https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZpSpuT1Xir6z7hGw
 
-class Options:
-    def __init__(self):
-       # source types
-       self.PLAYLIST = 'playlist'
-       self.ALBUM = 'album'
-       self.ARTIST = 'artist'
-       self.SONG = 'song'
-       self.CURRENT_SONG = 'current_song'
-
-       # output types
-       self.CREATE_ONLY = 'w'
-       self.APPEND_ONLY = 'a'
-       self.APPEND_OR_CREATE = 'a+'
-
-    def type_is_playlist(self, content_type):
-        return content_type == self.PLAYLIST
-
-    def type_is_album(self, content_type):
-        return content_type == self.ALBUM
-
-    def type_is_artist(self, content_type):
-        return content_type == self.ALBUM
-
-    def type_is_song(self, content_type):
-        return content_type == self.SONG
-
-    def type_is_current_song(self, content_type):
-        return content_type == self.CURRENT_SONG
-
-    def generate(self, reference, direction=None, content_type=None, scope=None,
-                 output_name=None, output_type=None, username=None):
-        """Request-wise options object
-        direction:
-            specify (sampled_by|samples)
-        reference:
-            link to identify the content. e.g. spotify:playlist:23sdf098y23kj
-        reference_type:
-            the type of the reference given, e.g. uri
-        content_type:
-            specify (album|song|current_song|playlist)
-        output_name:
-            name of output playlist
-        output_type:
-            (play|append_only|create_only|append_or_create)
-            default=create_only
-        """
-        self.reference = reference
-        self.direction = direction if direction else d.contains_sample_of
-        if content_type:
-            self.content_type = content_type
-        else:
-            pass # TODO parse content_type
-        self.output_name = output_name
-        self.output_type = output_type if output_type else self.CREATE_ONLY
-        self.scope = scope
-        self.username = username if username else cfg.username
-
-
-class Samplify:
+class Samplify(object):
     def __init__(self, scope='playlist-modify-public',
-                 prompt_for_token=True, debug=False, token=None):
-        self.scraper = Scraper()
+                 prompt_for_token=True, verbosity=0, token=None):
+        self.verbosity = verbosity
+        self.logger = Logger(verbosity=self.verbosity)
+        self.scraper = Scraper(verbosity=self.verbosity)
         self.tokens = []
-        self.debug = debug
         if prompt_for_token:
             token = self.get_token(scope)
             self.tokens.append((scope, token))
             self.spot = spotipy.Spotify(auth=token)
-
 
     def samplify(self, options):
         """ The most general endpoint for interacting with samplify
 
         """
         source_songs = self.get_source_spotify_tracks(options)
-        sample_data = self.get_sample_data(source_songs)
+        sample_data = self.get_sample_data(source_songs, options.direction)
 
 
         spotify_dict = self.get_sample_spotify_tracks(sample_data)
-        self.populate_output(options=options,
-                             sample_tracks=spotify_dict)
-        print(f'Created playlist {options.playlist_name}')
+        options.output_name, description = self.populate_output(
+            options=options,
+            sample_tracks=spotify_dict
+        )
+
+        self.log(message=f'\n{description}')
+        self.log(message=f'Created playlist {options.playlist_name}')
+        self.logger.write_log(options.output_name)
         return self.spot
 
 
     def from_search(self, search_term, content_type,
                     direction=None, output_name=None, output_type=None):
-        # FIXME: generalise search from get_sample_spotify_tracks
         options = Options()
-        result = self.spot.search(search_term,
-                                  limit=50)
+        result = self.spot.search(search_term, limit=50)
+        self.log(message=f'Searched for "{search_term}"',
+                 function='from_search',
+                 data=result)
+        if not result:
+            return None
 
+        # build objectpath query & get first result
         tree_obj = objectpath.Tree(result)
         search_mod = '.album' if options.type_is_album(options.ALBUM) else ''
         query = f'$.tracks.items{search_mod}.(name, uri)'
-        # options.parent_name, reference
-        queried = \
-            json.loads(json.dumps(tuple(tree_obj.execute(query))))[0] # get top result
+        queried = json.loads(json.dumps(tuple(tree_obj.execute(query))))[0]
 
         options.parent_name = queried['name']
         reference = queried['uri']
-
-        if self.debug: self.log(message='from_search',
-                                content=('json', search_result))
 
         options.generate(
             reference=reference,
@@ -207,12 +157,11 @@ class Samplify:
             results.append(self.spot.track(options.reference))
 
         if options.content_type == options.CURRENT_SONG:
-            # FIXME: Spotipy API from package doesn't contain `current_song` function
-            results.append(self.spot._get("me/player/currently-playing", market=None))
+            results.append(self.spot.currently_playing())
 
         return self.format_source_result(results, track_parser, options)
 
-    def format_source_result(self, results, track_parser, options):
+    def format_source_result(self, results, track_parser,options):
         og_tracks = []
         options.parent_name = results['name']
         for entry in results['tracks']['items']:
@@ -226,42 +175,51 @@ class Samplify:
 
     def get_sample_spotify_tracks(self, sample_tracks):
         """ Searches spotify for sample tracks """
-        if self.debug: self.log('Checking Spotify for Samples')
+        self.log(message='Checking Spotify for Samples',
+                 function='get_sample_spotify_tracks',
+                 data=sample_tracks)
 
         found_songs = []  # matches append {'detail': foo, 'search_query': baz, 'id': bar}
         unfound_list = [] # this is just a one-dimensional list
+
         for track in sample_tracks:
             sub_list = []
             title = track['title']
             artist = track['artist']
             null = lambda s, ss: s.replace(ss, ' ')
-            s_artist = \
-                null(null(null(null(null(artist.lower(), '&'), ' feat '), ' feat. '), ' the '), ' and ')
+            s_artist = null(null(null(null(null(artist.lower(),
+                           '&'), ' feat '), ' feat. '), ' the '), ' and ')
             detail = f'{track["query"]} -> {title}, by {artist}'
+
             search_query = f'{title} {s_artist}'
-            result = self.spot.search(search_query,
-                                      limit=10)['tracks']['items']
+            self.log(message=f'Searching spotify with {search_query}',
+                     function='get_sample_spotify_tracks',
+                     data=f'query: {search_query}\ndetail:{detail}')
+
+            result = self.spot.search(search_query, limit=10)['tracks']['items']
             for entry in result: # iter search results for first artist fuzzy match
                 search_artist = entry['artists'][0]['name'].lower()
-                if fuzz.token_set_ratio(search_artist, artist) > 90:
-                    sub_list.append({
-                        'detail': detail,
-                        'search_query': search_query,
-                        'id': entry['id']
-                    })
-                    break
+                if fuzz.token_set_ratio(search_artist, artist) < 90:
+                    continue
+                sub_list.append({
+                    'detail': detail,
+                    'search_query': search_query,
+                    'id': entry['id']
+                })
+                break
 
             if sub_list: # hit
                 found_songs.append(sub_list[0])
             else:        # no hit
-                unfound_list.append({'detail': detail, 'search_query': search_query})
-
+                unfound_list.append(
+                    {'detail': detail, 'search_query': search_query})
 
         find_rate = 1 - len(unfound_list) / len(sample_tracks)
         return {'found': found_songs, 'unfound': unfound_list, 'rate': find_rate}
 
-    def get_sample_data(self, source_songs):
-        new_playlist_tracks = self.scraper.get_whosampled_playlist(source_songs)
+    def get_sample_data(self, source_songs, direction):
+        new_playlist_tracks = self.scraper.get_whosampled_playlist(
+            source_songs, direction)
         return new_playlist_tracks
 
 
@@ -270,10 +228,10 @@ class Samplify:
         playlist_name = \
             options.output_name if options.output_name \
                                 else f'SAMPLIFY: {options.parent_name}'
+
         options.playlist_name = playlist_name
-        description = self.generate_description(
+        description, long_description = self.generate_description(
             sample_data=sample_tracks, options=options)
-        if self.debug: print(description)
 
         if options.output_type == options.APPEND_ONLY or \
            options.output_type == options.APPEND_OR_CREATE:
@@ -286,7 +244,8 @@ class Samplify:
             playlist = self.spot.user_playlist_create(
                 user=options.username, name=playlist_name,
                 public=True) # FIXME: allow private playlists
-            playlist_id = self.spot.user_playlists(options.username)['items'][0]['id']
+            playlist_id = self.spot.user_playlists(
+                options.username)['items'][0]['id']
 
         ids = [track['id'] for track in sample_tracks['found']]
 
@@ -295,36 +254,31 @@ class Samplify:
         self.spot.user_playlist_change_details(
             playlist_id=playlist_id,description=description)
 
-    def log(self, message, content):
-        from time import time
-        log_type, payload = content
-        if log_type == 'json':
-            payload = json.dumps(payload, indent=4)
-        with open(f'{message}.{time()}.{log_type}', 'w+') as f:
-            f.write(payload)
+        return playlist_name, long_description
 
     def generate_description(self, sample_data, options):
         """
         Gives some information on the playlist.
         - Descriptions in spotify are 300 chars
         """
-        print(sample_data)
         join = lambda key, sub_key: str.join('''
 ''', [track[sub_key] for track in sample_data[key]])
+
         unfound = join('unfound', 'detail')
         u_searches = join('unfound', 'search_query')
+
         found = join('found', 'detail')
         f_searches = join('found', 'search_query')
-        rate = round(sample_data['rate'], 3)*100
+        rate = round(sample_data['rate'], 3) * 100
 
-        description = f'''
+        long_description = f'''
 # {options.playlist_name}
 
 This playlist was generated using Samplify.
 Github: https://github.com/qzdl/samplify
 
 The {options.content_type}, {options.parent_name}, has been broken down into:
-"{options.direction.lower()}"
+"{[i.lower() for i in options.direction]}"
 
 Percentage Matched: {rate}%
 
@@ -340,5 +294,13 @@ Sample Info:
 ==> search terms:
 {f_searches}
         '''
-        print(description)
-        return description
+        self.log(message='Description generated successfully',
+                 function='generate_description',
+                 data=long_description)
+
+        short_description = f'This playlist was generated using samples found in {options.parent_name} with Samplify. Github: https://github.com/qzdl/samplify. Found: {rate}%.'
+        return short_description, long_description
+
+
+    def log(self, **kwargs):
+        self.logger.log(**kwargs)

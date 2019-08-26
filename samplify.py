@@ -1,5 +1,6 @@
-from sample_finder import Samplify, Options
 import argparse
+from sample_finder import Samplify
+from tools.options import Options
 
 """
 CLI Frontend to Samplify
@@ -52,10 +53,32 @@ if __name__ == '__main__':
     parser.add_argument("--output-name")
     parser.add_argument("--output-type")
     parser.add_argument("--username")
+
+    debug_group = parser.add_mutually_exclusive_group(required=False)
+    debug_group.add_argument(
+        '-v',
+        help='Include function detail',
+        action="store_const",
+        const=1,
+        dest='verbosity'
+    )
+    debug_group.add_argument(
+        '-vv',
+        help='Multiline, include limited data',
+        action="store_const",
+        const=2,
+        dest='verbosity'
+    )
+    debug_group.add_argument(
+        '-vvv',
+        help='Multiline, include full data',
+        action="store_const",
+        const=3,
+        dest='verbosity'
+    )
     args = parser.parse_args()
 
-    default_options = Options()
-    samplify = Samplify();
+    samplify = Samplify(verbosity=args.verbosity or 0);
     result = None
 
     if args.search:

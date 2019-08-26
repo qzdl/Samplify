@@ -1,22 +1,27 @@
 import requests
 from bs4 import BeautifulSoup
-from . import direction as direct
+if __name__ == '__main__':
+    import direction as direct
+    import logger
+else:
+    from . import direction as direct
+    from . import logger
 
 class Scraper:
     """ A scraper for whosampled
-      - handles paging
-      direction:
-        - items defined in ./direction.py
-        - collect *only* samples relevant to direction
-        e.g `s = Scraper(direction=direction.contains_sample_of)`
+    Description:
+      -
+
+    Parameters:
       debug:
-        - write logs of each page & be mega verbose about everything
+        - Prints detail of each step
     """
-    def __init__(self, direction=None, debug=False):
+    def __init__(self, verbosity=0):
         # create a session to manage lifetime of self.requests and skip auto-reject from
         # whosampled; seems pretty unfriendly to block self.request's default headers.
-        self.debug = debug
-        self.direction = direction
+        self.verbosity = verbosity
+        self.logger = logger.Logger(verbosity)
+        self.directions = None
         self.base_url = 'https://whosampled.com'
         self.req = requests.Session()
         adapter = requests.adapters.HTTPAdapter(max_retries=10)
@@ -27,38 +32,62 @@ class Scraper:
             "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36"
         }
 
-    def get_whosampled_playlist(self, loaded_playlist, direction=None):
-        """ Main endpoint for Scraper
-        loaded_playlist:
-        - type is <list: dict>
-        - [{"track": "School Boy Crush", "artist": "Average White Band"}, ...]
-             - Gets link for each song in `loaded_playlist`
-             - scrapes corresponding detail page for song
-             - parses detail from scrape
+    def get_whosampled_playlist(self, source_playlist, direction):
+        """ Finds detail relevant to direction from songs related to a source playlist
+
+        Parameters:
+          source_playlist: <list: dict>
+            - e.g. [{"track": "School Boy Crush", "artist": ["Average White Band"]}]
+            - Gets link for each song in `source_playlist`
+            - scrapes corresponding detail page for song
+            - parses detail from scrape
+
+          direction: <list: str>
+            - e.g. [direct.contains_sample_of]
+            - items defined in ./direction.py
+            - collect *only* samples relevant to direction
+
+        Returns:
+          <list: dict> of sample detail
         """
         samples = []
-        new_playlist = []
-        for i in loaded_playlist:
-            print(i['track'] + ' by ' + i['artist'][0])
-            samples, sampled_by = self.get_samples(i['track'], i['artist'][0])
-            if samples:
-                new_playlist.append(samples)
-        lst = [i for j in new_playlist for i in j] # what the fuck
+        self.directions = direction
+        self.log(message='Scraping for source_playlist',
+                 function='get_whosampled_playlist',
+                 data=source_playlist)
+
+        for track in source_playlist:
+            samples = samples + self.get_samples(track['track'], track['artist'][0])
+        if not samples:
+            self.log(message='No samples found',
+                     function='get_whosampled_playlist')
+            return None
+
+        # get the track lists from samples => get the tracks from the track list
+        # output is <list: dict>, where dict = sample detail
+        lst = [track for tracks in samples for track in tracks]
+        self.logger.write_log('scraper_trace')
         return lst
 
     def get_samples(self, song_title, artist_name):
         """ Retrieves sample detail for individual song """
         link = self.search(song_title, artist_name)
         if not link:
-            return None, None
-        samples, sampled_by = self.get_sample_details(song_title, link)
-        return samples, sampled_by
+            return []
+        sample_data = self.get_sample_details(song_title, link)
+        return sample_data or []
 
-    def search(self, song_title, artist_name=None):
-        """queries for song, returns relevant links
-           FIXME refinements to how strict this is
-             - aka make it find tighter matches at the search level
-             - degree of strictness? could be quantified w/ fuzzy match
+    def search(self, song_title, artist_name):
+        """ Queries whosampled.com for song, returns relevant links
+        Description:
+        - Builds query string with `song_title` and `artist_name`
+        - whosampled is doing the heavy lifting for 'relevance',
+          as only the top result for a given query is taken
+        Parameters:
+          song_title:
+          - <str> song title, e.g 'Teenage Love'
+          artist_name:
+          - <str> artist name, e.g 'Slick Rick'
         """
 
         query = song_title.replace(' ', '%20')
@@ -66,8 +95,7 @@ class Scraper:
             query = f'{query}%20{artist_name.replace(" ", "%20")}'
         url = f'https://www.whosampled.com/search/tracks/?q={query}'
         r = self.req.get(url)
-        content = r.content
-        search_page_soup = BeautifulSoup(content, 'html.parser')
+        search_page_soup = BeautifulSoup(r.content, 'html.parser')
         search_results = search_page_soup.findAll(
             'li', attrs={'class': "listEntry"})
 
@@ -99,34 +127,54 @@ class Scraper:
           - e.g only parse items in 'Sampled By'
         """
         url = f'{self.base_url}{link}'
+        s = self.req.get(url)   # get summary page
+        page_detail = s.content
+
+        self.log(message=f'Getting summary page: {url}',
+                 function='get_sample_details',
+                 data=page_detail)
+
+        # get section headers (correspond to `direction`)
+        match = []
+        soup = BeautifulSoup(page_detail, 'html.parser')
+        headings = soup.findAll('header', attrs={'class': 'sectionHeader'})
+        for header in headings:
+            for direction in self.directions:
+                if direction not in header.span.text:
+                    continue
+
+                direction_data = header.find_next_sibling(
+                        'div', attrs={'class': 'list bordered-list'}).text
+                match.append(self.parse_sample_items(
+                    song_title=song_title,
+                    sample_data=direction_data,
+                    link=link,
+                    direction=direction
+                ))
+        return match
+
+    def get_direction_content(self, url, song_title, direction, recursing=False):
         s = self.req.get(url)
         page_detail = s.content
         soup = BeautifulSoup(page_detail, 'html.parser')
+        # check if base paged content is 404
+        if 'The page you requested cannot be found' in str(soup):
+            return None, []
 
-        # FIXME findAll('div', attrs={'class': '.sectionHeader'})
-        # then list comp -> find_next_sibling('div') on each for content grid
-        # allows match on direction (from direction.py)
-        # - note; completely speculating
         listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
+        return soup, self.parse_sample_items(song_title=song_title,
+                                             sample_data=listed[0],
+                                             direction=direction,
+                                             link=None,
+                                             recursing=recursing)
 
-        if not listed:
-            return [], []
-        # NOTE: order is currently just assuming page renders as contains, was sampled in, remix, cover
-        contains_samples_of = self.parse_sample_items(song_title=song_title,
-                                                      sample_data=listed[0],
-                                                      link=link,
-                                                      direction=direct.contains_sample_of)
-        if not len(listed) > 2:
-            return contains_samples_of, []
-        was_sampled_in = self.parse_sample_items(song_title=song_title,
-                                                 sample_data=listed[1],
-                                                 link=link,
-                                                 direction=direct.was_sampled_in)
-
-        return contains_samples_of, was_sampled_in
-
-    def parse_sample_items(self, song_title, sample_data, direction, link, recursing=False):
-        """ Gets detail from track summary listing
+    def parse_sample_items(self, song_title, sample_data,
+                           direction, link, recursing=False):
+        """ Gets detail from track listing
+        description:
+          Parses text from
+        Returns:
+          <list: dict> detail of
         """
         raw_samples =  [i.split('\n') for i in list(filter(None, sample_data.split('\t')))][:-1]
         parsed_samples = []
@@ -147,7 +195,9 @@ class Scraper:
                 'artist':  artist,
                 'year': year
             })
-        if self.debug: self.log(f'parse_sample_items: {parsed_samples}')
+        self.log(message=f'Getting sample data for {song_title}, len=={len(parsed_samples)}',
+                 function='parse_sample_items',
+                 data=parsed_samples)
         return parsed_samples
 
     def scrape_paged_content(self, song_title, direction, link):
@@ -177,38 +227,21 @@ class Scraper:
             tracks = tracks + parsed
         return tracks
 
-    def get_direction_content(self, url, song_title, direction, recursing=False):
-        s = self.req.get(url)
-        page_detail = s.content
-        soup = BeautifulSoup(page_detail, 'html.parser')
-        # check if base paged content is 404
-        if 'The page you requested cannot be found' in str(soup):
-            return None, []
-
-        listed = [i.text for i in soup.findAll('div', attrs={'class': 'list bordered-list'})]
-        return soup, self.parse_sample_items(song_title=song_title,
-                                             sample_data=listed[0],
-                                             direction=direction,
-                                             link=None,
-                                             recursing=recursing)
-
-    def log(self, message, function=None, page_source=None):
-        from time import time
-        print(f'''
-Message:  {message}
-        ''')
-        if not page_source:
-            return
-        file_name = f'{time()}.{song_title}.html'
-        with open(file_name, 'w+') as f:
-            f.write('<!-- SAMPLE PAGE CONTENT -->\n')
-            f.write(str(soup))
-            f.write(str(listed))
+    def log(self, **kwargs):
+        self.logger.log(**kwargs)
 
 
 if __name__ == '__main__':
-    s = Scraper()
-    result = s.get_sample_details('Halftime', '/Nas/Halftime/')
+    s = Scraper([direct.contains_sample_of, direct.was_sampled_in], debug=True)
+
+    result = s.get_whosampled_playlist(
+        [{"track": "Communism", "artist": ["Common"]}],
+        direction=[direct.contains_sample_of]
+    )
+
+    # result = s.get_whosampled_playlist(
+    #     [{"track": "School Boy Crush", "artist": ["Average White Band"]}],
+    #     direction=[direct.contains_sample_of]
+    # )
+
     print(result)
-# test `scrape_page_content` -> throw this oneliner into ipython & see
-# from whosampled_scrape import Scraper; s = Scraper(); import direction as d; items = s.scrape_paged_content(direction=d.was_sampled_in, link='https://whosampled.com/nas/halftime')

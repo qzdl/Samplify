@@ -1,0 +1,10 @@
+verbosity == 3
+verbosity == 3
+
+Message: Searched for "dogg food the dogg pound"
+
+Function: from_search
+
+Data:
+{'tracks': {'href': 'https://api.spotify.com/v1/search?query=dogg+food+the+dogg+pound&type=track&market=GB&offset=0&limit=50', 'items': [], 'limit': 50, 'next': None, 'offset': 0, 'previous': None, 'total': 0}}
+

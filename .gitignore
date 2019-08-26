@@ -128,5 +128,7 @@ config*
 
 # emacs temp files
 \#*
+.\#*
+
 # venv
 samplify/
