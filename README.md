@@ -1,6 +1,5 @@
 # Spotify Sample Playlist
 
-
 ## Getting Started
 Setup TLDR; `git clone https://github.com/qzdl/samplify.git && cd spotify-samples && venv samplify -r requirements.txt && source samplify/bin/activate`
 
@@ -40,7 +39,8 @@ redirect = 'http://localhost:8889'
 ## Usage
 ![Playlists created by the tool](./docs/spotify_cap.png)
 
-# Command Line Interface `CLI`
+## Documentation
+### Command Line Interface `CLI`
 Detail about the CLI can be found by reading the documentation provided by the `--help`
 option flag. Documentation will but updated there as the project progresses.
 ```
@@ -161,6 +161,6 @@ This project is based on the work of [Christopher Pease (cpease00)](https://gith
 Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic,   
 I would have had a bunch more pain to go through in producing the project as it is now.
 
-# `Options()`
-# `Samplify()`
-# `Scraper()`
+### `Options()`
+### `Samplify()`
+### `Scraper()`

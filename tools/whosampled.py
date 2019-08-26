@@ -47,7 +47,7 @@ class Scraper:
         return lst
 
     def get_samples(self, song_title, artist_name):
-        """Retrieves sample detail for individual song"""
+        """ Retrieves sample detail for individual song """
         link = self.search(song_title, artist_name)
         if not link:
             return None, None
@@ -206,5 +206,9 @@ Message:  {message}
             f.write(str(listed))
 
 
+if __name__ == '__main__':
+    s = Scraper()
+    result = s.get_sample_details('Halftime', '/Nas/Halftime/')
+    print(result)
 # test `scrape_page_content` -> throw this oneliner into ipython & see
 # from whosampled_scrape import Scraper; s = Scraper(); import direction as d; items = s.scrape_paged_content(direction=d.was_sampled_in, link='https://whosampled.com/nas/halftime')

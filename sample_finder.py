@@ -9,9 +9,8 @@ import config as cfg
 import json
 import objectpath
 
-#==[ link types ]===================#
-URI = 'uri' # spotify:album:2laBNOqPW85M3js7qCYhKt
-HTTP = 'http' # https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZpSpuT1Xir6z7hGw
+# uri => spotify:album:2laBNOqPW85M3js7qCYhKt
+# http => https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZpSpuT1Xir6z7hGw
 
 class Options:
     def __init__(self):
@@ -98,7 +97,8 @@ class Samplify:
         return self.spot
 
 
-    def from_search(self, search_term, content_type, direction=None, output_name=None, output_type=None):
+    def from_search(self, search_term, content_type,
+                    direction=None, output_name=None, output_type=None):
         # FIXME: generalise search from get_sample_spotify_tracks
         options = Options()
         result = self.spot.search(search_term,
@@ -107,7 +107,7 @@ class Samplify:
         tree_obj = objectpath.Tree(result)
         search_mod = '.album' if options.type_is_album(options.ALBUM) else ''
         query = f'$.tracks.items{search_mod}.(name, uri)'
-        # options.parent_name, reference = \
+        # options.parent_name, reference
         queried = \
             json.loads(json.dumps(tuple(tree_obj.execute(query))))[0] # get top result
 
@@ -342,102 +342,3 @@ Sample Info:
         '''
         print(description)
         return description
-
-
-if __name__ == '__main__':
-    options = Options()
-    import argparse
-    parser = argparse.ArgumentParser()
-    reference_group = parser.add_mutually_exclusive_group(required=True)
-    reference_group.add_argument(
-        '-l',
-        '--link',
-        help='Click "Share" > "Copy Link"'
-    )
-    reference_group.add_argument(
-        '-s',
-        '--search',
-        help='Search as you would in the app'
-    )
-
-    content_group = parser.add_mutually_exclusive_group(required=True)
-    content_group.add_argument(
-        '--album',
-        action="store_const",
-        const=options.ALBUM,
-        dest='content_type'
-    )
-    content_group.add_argument(
-        '--playlist',
-        action="store_const",
-        const=options.PLAYLIST,
-        dest='content_type'
-    )
-    content_group.add_argument(
-        '--song',
-        action="store_const",
-        const=options.SONG,
-        dest='content_type'
-    )
-    # FIXME: current song can't work with '--search'
-    content_group.add_argument(
-        '--current-song',
-        action="store_const",
-        const=options.CURRENT_SONG,
-        dest='content_type'
-    )
-
-    parser.add_argument("--direction")
-    parser.add_argument("--output-name")
-    parser.add_argument("--output-type")
-    parser.add_argument("--username")
-    args = parser.parse_args()
-    print('parsed args')
-    print(args)
-
-    default_options = Options()
-    samplify = Samplify();
-    result = None
-
-
-    if args.search:
-        result = samplify.from_search(
-            search_term=args.search,
-            direction=args.direction,
-            content_type=args.content_type,
-            output_name=args.output_name,
-            output_type=args.output_type
-        )
-
-
-    if options.type_is_playlist(args.content_type):
-        result = samplify.playlist(
-            reference=args.link,
-            direction=args.direction,
-            output_name=args.output_name,
-            output_type=args.output_type,
-            username=args.username
-        )
-    elif  options.type_is_album(args.content_type):
-        result = samplify.album(
-            reference=args.link,
-            direction=args.direction,
-            output_name=args.output_name,
-            output_type=args.output_type
-        )
-    elif options.type_is_song(args.content_type):
-        result = samplify.song(
-            reference=args.link,
-            direction=args.direction,
-            output_name=args.output_name,
-            output_type=args.output_type,
-            username=args.username
-        )
-    elif options.type_is_current_song(args.content_type):
-        result = samplify.current_song(
-            reference=args.link,
-            direction=args.direction,
-            output_name=args.output_name,
-            output_type=args.output_type,
-            username=args.username
-        )
