@@ -7,7 +7,7 @@ class Logger:
         self.logs = []
 
     def log(self, message, oneline=True, function=None, data=None):
-        m_message = f'\nMessage: {message}\n'
+        m_message = f'Message: {message}'
         m_function = ''
         if function and self.verbosity > 0:
             m_function = f'\nFunction: {function}\n'
@@ -15,7 +15,7 @@ class Logger:
         m_data = ''
         if data and self.verbosity > 1:
             data = data if self.verbosity > 2 else str(data)[:250]
-            m_data = f'\nData:\n{data}\n'
+            m_data = f'\nData:\n{data}'
 
         if self.verbosity > 1 or oneline:
             log = f'{m_message}{m_function}{m_data}'
