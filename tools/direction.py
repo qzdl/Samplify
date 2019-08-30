@@ -6,10 +6,10 @@ COMMENTS:
     with the detail and it will be implemented
 """
 
-was_covered_in = 'Was covered in '
-was_remixed_in = 'Was remixed in '
-was_sampled_in = 'Was sampled in '
-contains_sample_of = 'Contains samples of '
+was_covered_in = 'Was covered in'
+was_remixed_in = 'Was remixed in'
+was_sampled_in = 'Was sampled in'
+contains_sample_of = 'Contains samples of'
 all_directions = [contains_sample_of, was_sampled_in, was_remixed_in, was_covered_in]
 
 def get_paged_content_by_direction(direction):

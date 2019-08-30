@@ -1,4 +1,5 @@
 import json
+from time import time
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.util import prompt_for_user_token
@@ -20,7 +21,7 @@ class Samplify(object):
     def __init__(self, scope='playlist-modify-public',
                  prompt_for_token=True, verbosity=0, token=None):
         self.verbosity = verbosity
-        self.logger = Logger(verbosity=self.verbosity)
+        self.logger = Logger(verbosity=self.verbosity, log_file=f'Samplify-{time()}')
         self.scraper = Scraper(verbosity=self.verbosity)
         self.tokens = []
         if prompt_for_token:
@@ -44,7 +45,6 @@ class Samplify(object):
 
         self.log(message=f'\n{description}')
         self.log(message=f'Created playlist {options.playlist_name}')
-        self.logger.write_log(options.output_name)
         return self.spot
 
 
@@ -169,7 +169,8 @@ class Samplify(object):
             artists = [prop['name'] for prop in track['artists']]
             og_tracks.append({
                 'artist': artists,
-                'track': track['name'].replace('Instrumental', '')
+                'track': track['name'].replace('Instrumental', ''),
+                'uri': track['uri']
             })
         return og_tracks
 
@@ -178,43 +179,50 @@ class Samplify(object):
         self.log(message='Checking Spotify for Samples',
                  function='get_sample_spotify_tracks',
                  data=sample_tracks)
-
         found_songs = []  # matches append {'detail': foo, 'search_query': baz, 'id': bar}
         unfound_list = [] # this is just a one-dimensional list
+        # track = og track
+        sample_count = 0
+        for source_track in sample_tracks:
+            og_title = source_track['track']
+            # direction = { 'Was sampled in ': [{}, ...] }
+            for direction, tracks in source_track['samples'].items():
+                sample_count = sample_count + len(tracks)
+                for track in tracks:
+                    sub_list = []
+                    title = track['title']
+                    artist = track['artist']
+                    null = lambda s, ss: s.replace(ss, ' ')
+                    s_artist = null(null(null(null(null(artist.lower(),
+                                '&'), ' feat '), ' feat. '), ' the '), ' and ')
+                    detail = f'( {og_title} )->-[ {direction} ]->-( {title}, by {artist} )'
+                    search_query = f'{title} {s_artist}'
+                    self.log(message=f'Searching spotify with {search_query}',
+                            function='get_sample_spotify_tracks',
+                            data=f'query: {search_query}\ndetail:{detail}')
 
-        for track in sample_tracks:
-            sub_list = []
-            title = track['title']
-            artist = track['artist']
-            null = lambda s, ss: s.replace(ss, ' ')
-            s_artist = null(null(null(null(null(artist.lower(),
-                           '&'), ' feat '), ' feat. '), ' the '), ' and ')
-            detail = f'{track["query"]} -> {title}, by {artist}'
+                    result = self.spot.search(search_query, limit=10)['tracks']['items']
+                    for entry in result: # iter search results for first artist fuzzy match
+                        search_artist = entry['artists'][0]['name'].lower()
+                        if fuzz.token_set_ratio(search_artist, s_artist) < 90:
+                            self.log(
+                                message=f'no match for s:{search_query}, r:{entry["name"]}',
+                                function=''
+                            )
+                            continue
+                        sub_list.append({
+                            'detail': detail,
+                            'search_query': search_query,
+                            'id': entry['id']
+                        })
+                        break
+                    if sub_list: # hit
+                        found_songs.append(sub_list[0])
+                    else:        # no hit
+                        unfound_list.append(
+                            {'detail': detail, 'search_query': search_query})
 
-            search_query = f'{title} {s_artist}'
-            self.log(message=f'Searching spotify with {search_query}',
-                     function='get_sample_spotify_tracks',
-                     data=f'query: {search_query}\ndetail:{detail}')
-
-            result = self.spot.search(search_query, limit=10)['tracks']['items']
-            for entry in result: # iter search results for first artist fuzzy match
-                search_artist = entry['artists'][0]['name'].lower()
-                if fuzz.token_set_ratio(search_artist, artist) < 90:
-                    continue
-                sub_list.append({
-                    'detail': detail,
-                    'search_query': search_query,
-                    'id': entry['id']
-                })
-                break
-
-            if sub_list: # hit
-                found_songs.append(sub_list[0])
-            else:        # no hit
-                unfound_list.append(
-                    {'detail': detail, 'search_query': search_query})
-
-        find_rate = 1 - len(unfound_list) / len(sample_tracks)
+        find_rate = 1 - len(unfound_list) / sample_count
         return {'found': found_songs, 'unfound': unfound_list, 'rate': find_rate}
 
     def get_sample_data(self, source_songs, direction):
@@ -295,9 +303,9 @@ Sample Info:
         '''
         self.log(message='Description generated successfully',
                  function='generate_description',
-                 data=description)
+                 data=long_description)
 
-        description = f'This playlist was generated using samples found in {options.parent_name} with Samplify. Github: https://github.com/qzdl/samplify. Found: {rate}%.'
+        description = f'This playlist was generated using samples found in {options.parent_name}, with Samplify. Github: https://github.com/qzdl/samplify. Found: {rate}%.'
         return description, long_description
 
 

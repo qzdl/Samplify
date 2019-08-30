@@ -23,6 +23,7 @@ class Logger:
             log = f'{m_message}{m_function}{m_data}'
         else:
             log = f'[B]=============================================={m_message}{m_function}{m_data}[E]=============================================='
+        self._log(log)
 
     def _log(self, content):
         print('verbosity ',self.verbosity)
