@@ -253,8 +253,7 @@ class Samplify(object):
             options.username, playlist_id, ids, position=None)
         self.spot.user_playlist_change_details(
             playlist_id=playlist_id,description=description)
-
-        return playlist_name, long_description
+        return playlist_name, description
 
     def generate_description(self, sample_data, options):
         """
@@ -296,10 +295,10 @@ Sample Info:
         '''
         self.log(message='Description generated successfully',
                  function='generate_description',
-                 data=long_description)
+                 data=description)
 
-        short_description = f'This playlist was generated using samples found in {options.parent_name} with Samplify. Github: https://github.com/qzdl/samplify. Found: {rate}%.'
-        return short_description, long_description
+        description = f'This playlist was generated using samples found in {options.parent_name} with Samplify. Github: https://github.com/qzdl/samplify. Found: {rate}%.'
+        return description, long_description
 
 
     def log(self, **kwargs):
