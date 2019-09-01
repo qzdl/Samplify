@@ -27,7 +27,7 @@ class Samplify(object):
         if prompt_for_token:
             token = self.get_token(scope)
             self.tokens.append((scope, token))
-            self.spot = spotipy.Spotify(auth=token)
+            self.spotify = spotipy.Spotify(auth=token)
 
     def samplify(self, options):
         """ The most general endpoint for interacting with samplify
@@ -45,13 +45,13 @@ class Samplify(object):
 
         self.log(message=f'\n{description}')
         self.log(message=f'Created playlist {options.playlist_name}')
-        return self.spot
+        return self.spotify
 
 
     def from_search(self, search_term, content_type,
                     direction=None, output_name=None, output_type=None):
         options = Options()
-        result = self.spot.search(search_term, limit=50)
+        result = self.spotify.search(search_term, limit=50)
         self.log(message=f'Searched for "{search_term}"',
                  function='from_search',
                  data=result)
@@ -147,17 +147,17 @@ class Samplify(object):
         results = []
         track_parser = lambda track: track
         if options.content_type == options.PLAYLIST:
-            results = self.spot.user_playlist(options.username, options.reference)
+            results = self.spotify.user_playlist(options.username, options.reference)
             track_parser = lambda track: track['track']
 
         if options.content_type == options.ALBUM:
-            results = self.spot.album(options.reference)
+            results = self.spotify.album(options.reference)
 
         if options.content_type == options.SONG:
-            results.append(self.spot.track(options.reference))
+            results.append(self.spotify.track(options.reference))
 
         if options.content_type == options.CURRENT_SONG:
-            results.append(self.spot.currently_playing())
+            results.append(self.spotify.currently_playing())
 
         return self.format_source_result(results, track_parser, options)
 
@@ -201,7 +201,7 @@ class Samplify(object):
                             function='get_sample_spotify_tracks',
                             data=f'query: {search_query}\ndetail:{detail}')
 
-                    result = self.spot.search(search_query, limit=10)['tracks']['items']
+                    result = self.spotify.search(search_query, limit=10)['tracks']['items']
                     for entry in result: # iter search results for first artist fuzzy match
                         search_artist = entry['artists'][0]['name'].lower()
                         if fuzz.token_set_ratio(search_artist, s_artist) < 90:
@@ -249,17 +249,17 @@ class Samplify(object):
         if options.output_type == options.CREATE_ONLY and playlist_id == 0:
             # create playlist, then retrieve id
 
-            playlist = self.spot.user_playlist_create(
+            playlist = self.spotify.user_playlist_create(
                 user=options.username, name=playlist_name,
                 public=True) # FIXME: allow private playlists
-            playlist_id = self.spot.user_playlists(
+            playlist_id = self.spotify.user_playlists(
                 options.username)['items'][0]['id']
 
         ids = [track['id'] for track in sample_tracks['found']]
 
-        self.spot.user_playlist_add_tracks(
+        self.spotify.user_playlist_add_tracks(
             options.username, playlist_id, ids, position=None)
-        self.spot.user_playlist_change_details(
+        self.spotify.user_playlist_change_details(
             playlist_id=playlist_id,description=description)
         return playlist_name, description
 
