@@ -37,7 +37,7 @@ class Samplify(object):
         sample_data = self.get_sample_data(source_songs, options.direction)
 
 
-        spotify_dict = self.get_sample_spotify_tracks(sample_data)
+        spotify_dict = self.get_sample_spotify_tracks(sample_data, options)
         options.output_name, description = self.populate_output(
             options=options,
             sample_tracks=spotify_dict
@@ -60,7 +60,7 @@ class Samplify(object):
 
         # build objectpath query & get first result
         tree_obj = objectpath.Tree(result)
-        search_mod = '.album' if options.type_is_album(options.ALBUM) else ''
+        search_mod = '.album' if options.type_is_album(content_type) else ''
         query = f'$.tracks.items{search_mod}.(name, uri)'
         queried = json.loads(json.dumps(tuple(tree_obj.execute(query))))[0]
 
@@ -161,7 +161,7 @@ class Samplify(object):
 
         return self.format_source_result(results, track_parser, options)
 
-    def format_source_result(self, results, track_parser,options):
+    def format_source_result(self, results, track_parser, options):
         og_tracks = []
         options.parent_name = results['name']
         for entry in results['tracks']['items']:
@@ -174,57 +174,86 @@ class Samplify(object):
             })
         return og_tracks
 
-    def get_sample_spotify_tracks(self, sample_tracks):
-        """ Searches spotify for sample tracks """
+    def get_sample_spotify_tracks(self, sample_tracks, options):
+        """ Searches spotify for sample tracks
+        if options.include_originator, the originator is placed in found_songs
+        """
         self.log(message='Checking Spotify for Samples',
                  function='get_sample_spotify_tracks',
                  data=sample_tracks)
         found_songs = []  # matches append {'detail': foo, 'search_query': baz, 'id': bar}
         unfound_list = [] # this is just a one-dimensional list
         # track = og track
-        sample_count = 0
+        total_sample_count = 0
         for source_track in sample_tracks:
             og_title = source_track['track']
             # direction = { 'Was sampled in ': [{}, ...] }
+            originator_used = False
             for direction, tracks in source_track['samples'].items():
-                sample_count = sample_count + len(tracks)
-                for track in tracks:
-                    sub_list = []
-                    title = track['title']
-                    artist = track['artist']
-                    null = lambda s, ss: s.replace(ss, ' ')
-                    s_artist = null(null(null(null(null(artist.lower(),
-                                '&'), ' feat '), ' feat. '), ' the '), ' and ')
-                    detail = f'( {og_title} )->-[ {direction} ]->-( {title}, by {artist} )'
-                    search_query = f'{title} {s_artist}'
-                    self.log(message=f'Searching spotify with {search_query}',
-                            function='get_sample_spotify_tracks',
-                            data=f'query: {search_query}\ndetail:{detail}')
+                total_sample_count = total_sample_count + len(tracks)
+                found_unfound = self.something_parser(tracks, og_title, direction)
 
-                    result = self.spotify.search(search_query, limit=10)['tracks']['items']
-                    for entry in result: # iter search results for first artist fuzzy match
-                        search_artist = entry['artists'][0]['name'].lower()
-                        if fuzz.token_set_ratio(search_artist, s_artist) < 90:
-                            self.log(
-                                message=f'no match for s:{search_query}, r:{entry["name"]}',
-                                function=''
-                            )
-                            continue
-                        sub_list.append({
-                            'detail': detail,
-                            'search_query': search_query,
-                            'id': entry['id']
-                        })
-                        break
-                    if sub_list: # hit
-                        found_songs.append(sub_list[0])
-                    else:        # no hit
-                        unfound_list.append(
-                            {'detail': detail, 'search_query': search_query})
+                if not originator_used \
+                   and direction == d.was_sampled_in:
+                    originator_used = True
+                    found_songs.append({
+                        'detail': 'The originator of sample data',
+                        'search_query': 'n/a',
+                        'id': source_track['uri']
+                    })
 
-        find_rate = 1 - len(unfound_list) / sample_count
+                found_songs = found_songs + found_unfound[0]
+                unfound_list = unfound_list + found_unfound[1]
+
+                if not originator_used:
+                    originator_used = True
+                    found_songs.append({
+                        'detail': 'The originator of sample data',
+                        'search_query': 'n/a',
+                        'id': source_track['uri']
+                    })
+        find_rate = 1 - len(unfound_list) / total_sample_count
         return {'found': found_songs, 'unfound': unfound_list, 'rate': find_rate}
 
+    def something_parser(self, tracks, og_title, direction):
+        found_list = []
+        unfound_list = []
+        for track in tracks:
+            sub_list = []
+            title = track['title']
+            artist = track['artist']
+            null = lambda s, ss: s.replace(ss, ' ')
+            s_artist = null(null(null(null(null(artist.lower(),
+                        '&'), ' feat '), ' feat. '), ' the '), ' and ')
+            detail = f'( {og_title} )->-[ {direction} ]->-( {title}, by {artist} )'
+            search_query = f'{title} {s_artist}'
+            self.log(message=f'Searching spotify with {search_query}',
+                    function='get_sample_spotify_tracks',
+                    data=f'query: {search_query}\ndetail:{detail}')
+
+            result = self.spotify.search(search_query, limit=10)['tracks']['items']
+            for entry in result: # iter search results for first artist fuzzy match
+                search_artist = entry['artists'][0]['name'].lower()
+                if fuzz.token_set_ratio(search_artist, s_artist) < 90:
+                    self.log(
+                        message=f'no match for s:{search_query}, r:{entry["name"]}',
+                        function=''
+                    )
+                    continue
+                sub_list.append({
+                    'detail': detail,
+                    'search_query': search_query,
+                    'id': entry['id']
+                })
+                break
+            if sub_list: # hit
+                found_list.append(sub_list[0])
+            else:        # no hit
+                unfound_list.append({
+                    'detail': detail,
+                    'search_query': search_query
+                })
+        return (found_list, unfound_list)
     def get_sample_data(self, source_songs, direction):
         new_playlist_tracks = self.scraper.get_whosampled_playlist(
             source_songs, direction)
