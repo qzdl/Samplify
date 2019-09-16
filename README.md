@@ -1,7 +1,10 @@
-# Spotify Sample Playlist
+# SAMPLIFY: Get Samples from any Playlist / Album / Song / Search
 
 ## Getting Started
-Setup TLDR; `git clone https://github.com/qzdl/samplify.git && cd spotify-samples && venv samplify && source samplify/bin/activate && pip -r requirements.txt
+Setup TLDR; 
+```
+git clone https://github.com/qzdl/samplify.git && cd spotify-samples && venv samplify && source samplify/bin/activate && pip -r requirements.txt
+```
 
 - Ensure you are running python3 with venv
 - Clone this repo with `git clone https://github.com/qzdl/samplify.git`
