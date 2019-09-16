@@ -3,7 +3,7 @@
 ## Getting Started
 Setup TLDR; 
 ```
-git clone https://github.com/qzdl/samplify.git && cd spotify-samples && venv samplify && source samplify/bin/activate && pip -r requirements.txt
+git clone https://github.com/qzdl/samplify.git && cd samplify && venv samplify && source samplify/bin/activate && pip -r requirements.txt
 ```
 
 - Ensure you are running python3 with venv
