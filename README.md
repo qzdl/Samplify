@@ -121,20 +121,20 @@ Created playlist SAMPLIFY: Uptown Saturday Night
 
 
 ## Program Overview
-Playlists are read from Spotify through the Spotify API using Spotipy.  
-Song names and artists are stored and then located on `Whosampled.com`.  
+Playlists are read from Spotify through the Spotify API using Spotipy.
+Song names and artists are stored and then located on `Whosampled.com`.
 
-A request is sent to the site searching for the song name, selecting a result  
-with the matching artist name and storing the link to that song's page. A second  
-request is sent to that song page, and BeautifulSoup is used to scrape HTML for  
+A request is sent to the site searching for the song name, selecting a result
+with the matching artist name and storing the link to that song's page. A second
+request is sent to that song page, and BeautifulSoup is used to scrape HTML for
 sample names, which are also stored.
 
-Next, the samples are located using Spotipy, if they exist. Finally, a new  
+Next, the samples are located using Spotipy, if they exist. Finally, a new
 playlist is created for the user, containing all the samples available on Spotify.
 
 ## Example Route Parsing
-Discovering how payloads differ to extend the functionality to albums, current song,  
-etc, is a process that requires some exploration. I'm sure there's examples of that  
+Discovering how payloads differ to extend the functionality to albums, current song,
+etc, is a process that requires some exploration. I'm sure there's examples of that
 in the commit history.
 ```python
 album = None
@@ -158,7 +158,7 @@ print(json.dumps(track_info, indent=2))
 
 ## Notes
 This project is based on the work of [Christopher Pease (cpease00)](https://github.com/cpease00/)'s sample collection tool   [Spotify-Samples](https://github.com/cpease00/).
-Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic,   
+Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic,
 I would have had a bunch more pain to go through in producing the project as it is now.
 
 ### `Options()`
