@@ -33,7 +33,7 @@ class Youtube:
         self.yt_session = googleapiclient.discovery.build(
             api_service_name, api_version, credentials=credentials)
 
-    def create_playlist(playlist_name, description):
+    def create_playlist(self, playlist_name, description):
         self.yt_session.playlists().insert(
             part="snippet,status",
             body={
@@ -41,8 +41,11 @@ class Youtube:
                     "title": playlist_name,
                     "description": description,
                     "tags": [
-                        "sample playlist",
-                        "API call"
+                        "SAMPLIFY",
+                        "samplify",
+                        "hiphopheads",
+                        "QZDL",
+                        "VinRican"
                     ],
                     "defaultLanguage": "en"
                 },
@@ -53,7 +56,8 @@ class Youtube:
         ) # end insert
         return request.execute()
 
-    def add_video_to_playlist(video_id, playlist_id):
+
+    def add_video_to_playlist(self, video_id, playlist_id):
         add_request=self.yt_session.playlistItems().insert(
             part="snippet",
             body={
@@ -65,4 +69,4 @@ class Youtube:
                     }
                 }
             })  # end insert
-        return add_request.execute()
+        return add_request.execute() # yields body of request

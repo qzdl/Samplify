@@ -1,5 +1,5 @@
 from tools import direction as direct
-import config
+import config.config as config
 
 class Options:
     def __init__(self):
