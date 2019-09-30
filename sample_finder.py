@@ -9,6 +9,7 @@ from tools.options import Options
 from tools.logger import Logger
 from tools import direction as d
 
+from platforms import platform
 from config import config as cfg
 
 # uri => spotify:album:2laBNOqPW85M3js7qCYhKt
@@ -29,7 +30,7 @@ class Samplify(object):
 
         """
         source_songs = self.input_platform.get_source_tracks(options)
-        sample_data = self.scraper.get_whosampled_playlist(source_songs, direction)
+        sample_data = self.scraper.get_whosampled_playlist(source_songs, options.direction)
 
         sample_dict = self.get_sample_matches_from_platform(sample_data, options)
         options.output_name, description = self.populate_output(

@@ -1,7 +1,7 @@
 import argparse
 from sample_finder import Samplify
 from tools.options import Options
-
+from platforms import platform
 """
 CLI Frontend to Samplify
 """
@@ -10,6 +10,28 @@ CLI Frontend to Samplify
 if __name__ == '__main__':
     options = Options()
     parser = argparse.ArgumentParser()
+    i_platform_group = parser.add_mutually_exclusive_group(required=True)
+    i_platform_group.add_argument(
+        '--input-spotify',
+        action="store_const",
+        const=platform.SPOTIFY,
+        dest='i_platform'
+    )
+
+    o_platform_group = parser.add_mutually_exclusive_group(required=True)
+    o_platform_group.add_argument(
+        '--output-spotify',
+        action="store_const",
+        const=platform.SPOTIFY,
+        dest='o_platform'
+    )
+    o_platform_group.add_argument(
+        '--output-youtube',
+        action="store_const",
+        const=platform.YOUTUBE,
+        dest='o_platform'
+    )
+
     reference_group = parser.add_mutually_exclusive_group(required=True)
     reference_group.add_argument(
         '-l',
@@ -78,7 +100,11 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    samplify = Samplify(verbosity=args.verbosity or 0);
+    samplify = Samplify(
+        verbosity=args.verbosity or 0,
+        input_platform=args.i_platform,
+        output_platform=args.o_platform,
+    );
     result = None
 
     if args.search:

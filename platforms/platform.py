@@ -7,12 +7,19 @@ import googleapiclient.errors
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-from spotipy.util import prompt_for_user_token
+from spotipy import util
 
 from config import config
 
 SPOTIFY = 'spotify'
 YOUTUBE = 'youtube'
+
+def get_platform(name):
+    if name == SPOTIFY:
+        return Spotify(0)
+    if name == YOUTUBE:
+        return Youtube(0)
+    raise Exception(f'Invalid platform name: {name}')
 
 class Platform:
     def __init__(self, verbosity=0):
@@ -39,17 +46,22 @@ class Platform:
         pass
 
 
-class Spotify(Platform):z
+class Spotify(Platform):
     def __init__(self, verbosity=0):
         self.name = SPOTIFY
         scope = 'playlist-modify-public'
         self.spotify = spotipy.Spotify(auth=self.get_token(scope))
+        super().__init__(verbosity)
 
 
     def get_token(self, scope):
         token = util.prompt_for_user_token(
-            config.username, scope, client_id=cfg.client,
-            client_secret=config.secret, redirect_uri=config.redirect)
+            config.username,
+            scope,
+            client_id=config.client,
+            client_secret=config.secret,
+            redirect_uri=config.redirect
+        )
         return token
 
 
@@ -87,8 +99,10 @@ class Spotify(Platform):z
 
 
     def create_playlist(playlist_name, public=True, user=None,
-                        short_description=self.description,
-                        long_description=self.description):
+                        short_description=None, long_description=None):
+        short_description = self.description if not short_description else short_description
+        long_description = self.description if not long_description else long_description
+
         self.spotify.user_playlist_create(
             user=options.username,
             name=playlist_name,
@@ -120,7 +134,6 @@ class Spotify(Platform):z
         return og_tracks
 
 
-
 class Youtube(Platform):
     def __init__(self, verbosity):
         """ Youtube intialisation
@@ -132,16 +145,16 @@ class Youtube(Platform):
         self.name = YOUTUBE
         self.music_category_id = 10
         # call parent ctor
-        self.super(Youtube).__init__(verbosity)
+        super().__init__(verbosity)
 
-        self.scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+        scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
         # Disable OAuthlib's HTTPS verification when running locally.
         # *DO NOT* leave this option enabled in production.
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-        self.api_service_name = "youtube"
-        self.api_version = "v3"
-        self.client_secrets_file = "../config/client.json"
+        api_service_name = "youtube"
+        api_version = "v3"
+        client_secrets_file = "config/client.json"
 
         # Get credentials and create an API client
         flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
@@ -181,8 +194,10 @@ class Youtube(Platform):
 
 
     def create_playlist(self, playlist_name, public=True, user=None,
-                        short_description=self.description,
-                        long_description=self.description):
+                        short_description=None, long_description=None):
+        short_description = self.description if not short_description else short_description
+        long_description = self.description if not long_description else long_description
+
         self.yt_session.playlists().insert(
             part="snippet,status",
             body={
