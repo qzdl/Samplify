@@ -276,7 +276,7 @@ class Scraper:
 
     def get_videos_from_breakdown(self, link):
         url = self.base_url + link
-        breakdown = BeautifulSoup(self.req.get(url).content)
+        breakdown = BeautifulSoup(self.req.get(url).content, 'html.parser')
         print(url)
         ids = [
             div.iframe.get('id') if div.iframe else None for div in

@@ -23,7 +23,7 @@ class Samplify(object):
         self.input_platform = platform.get_platform(input_platform)
         self.output_platform = platform.get_platform(output_platform) \
             if input_platform != output_platform \
-            else input_platform
+            else self.input_platform
 
     def samplify(self, options):
         """ The most general endpoint for interacting with samplify
@@ -32,7 +32,7 @@ class Samplify(object):
         source_songs = self.input_platform.get_source_tracks(options)
         sample_data = self.scraper.get_whosampled_playlist(source_songs, options.direction)
 
-        sample_dict = self.get_sample_matches_from_platform(sample_data, options)
+        sample_dict = self.get_sample_tracks(sample_data, options)
         options.output_name, description = self.populate_output(
             options=options,
             sample_tracks=sample_dict
@@ -131,7 +131,7 @@ class Samplify(object):
         found_songs = []  # matches append {'detail': foo, 'search_query': baz, 'id': bar}
         unfound_list = [] # this is just a one-dimensional list
         self.log(
-            message=f'Checking {self.platform.name} for Samples',
+            message=f'Checking {self.output_platform.name} for Samples',
             function='get_sample_tracks',
             data=sample_tracks
         )
@@ -175,7 +175,7 @@ class Samplify(object):
         found_list = []
         unfound_list = []
 
-        tracks = self.platform.filter_nulls(tracks)
+        tracks = self.output_platform.filter_nulls(tracks)
         # iter each sample in the given direction
         for track in tracks:
             sub_list = []
@@ -223,20 +223,20 @@ class Samplify(object):
         short_description, long_description = self.generate_description(
             sample_data=sample_tracks, options=options)
 
-        if options.output_type == options.CREATE_ONLY and playlist_id == 0:
-            # create playlist, then retrieve id
-            playlist_id = self.output_platform.create_playlist(
-                playlist_name=playlist_name,
-                long_description=long_description,
-                short_description=short_description,
-                public=True,
-                user=options.username
-            )
+        # create playlist, then retrieve id
+        playlist_id = self.output_platform.create_playlist(
+            playlist_name=playlist_name,
+            public=True,
+            user=options.username,
+            short_description=short_description,
+            long_description=long_description
+        )
 
         track_ids = [track['id'] for track in sample_tracks['found']]
         self.output_platform.add_items_to_playlist(
             playlist_id,
             track_ids,
+            user=options.username,
             origin_name=options.parent_name
         )
 

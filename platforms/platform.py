@@ -39,7 +39,8 @@ class Platform:
     def search(self, query):
         pass
 
-    def create_playlist(self, playlist_name, description, origin_name=None):
+    def create_playlist(self, playlist_name, public=True, user=None,
+                        short_description=None, long_description=None):
         pass
 
     def add_item_to_playlist(self, playlist_id, item_id):
@@ -98,26 +99,25 @@ class Spotify(Platform):
         return term_builder, self.spotify.search(query, limit=10)['tracks']['items']
 
 
-    def create_playlist(playlist_name, public=True, user=None,
+    def create_playlist(self, playlist_name, public=True, user=None,
                         short_description=None, long_description=None):
         short_description = self.description if not short_description else short_description
         long_description = self.description if not long_description else long_description
 
         self.spotify.user_playlist_create(
-            user=options.username,
+            user=user,
             name=playlist_name,
             public=True,
             description=short_description
         )
 
         # return playlist_id (gets most recent playlist)
-        return self.spotify.user_playlists(options.username)['items'][0]['id']
+        return self.spotify.user_playlists(user)['items'][0]['id']
 
 
-    def add_items_to_playlist(self, playlist_id, track_ids, origin_name=None):
+    def add_items_to_playlist(self, playlist_id, track_ids, user, origin_name=None):
         self.spotify.user_playlist_add_tracks(
-            options.username, playlist_id, ids, position=None
-        )
+            user, playlist_id, track_ids, position=None)
 
 
     def format_source_result(self, results, track_parser, options):
@@ -174,10 +174,10 @@ class Youtube(Platform):
         - term_builder = query
         """
         search_response = self.yt_session.search().list(
-            q=options.q,
+            q=query,
             part="id,snippet",
-            maxResults=options.max_results,
-            type='video'
+            maxResults=10,
+            type='video' # FIXME: restrict to videos
         ).execute()
 
         # FIXME: I'm sure there's something better we can do here

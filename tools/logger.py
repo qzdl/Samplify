@@ -3,7 +3,7 @@ from time import time
 class Logger:
     def __init__(self, verbosity, log_file):
         self.verbosity = verbosity
-        self.log_file = log_file
+        self.log_file = f'logs/{log_file}.log'
         self.logs = []
         self._log(f'verbosity == {verbosity}')
         self._log(f'log_file == {log_file}')
