@@ -8,9 +8,9 @@ git clone https://github.com/qzdl/samplify.git && cd samplify && venv samplify &
 
 - Ensure you are running python3 with venv
 - Clone this repo with `git clone https://github.com/qzdl/samplify.git`
-- `cd` to the new directory, and create a new virtual environment with
-  `venv samplify -r requirements.txt`
-  - Run `source samplify/bin/activate` to activate the new environment
+- `cd` to the new directory, and create a new virtual environment with `venv samplify`
+- Run `source samplify/bin/activate` to activate the new environment.
+- Install the dependencies with `pip -r requirements.txt`
   * Refer to [`requirements.txt`](./requirements.txt) for a list of packages
 
 ### Spotify API Access; config.py
