@@ -7,12 +7,12 @@ from spotipy import util
 from fuzzywuzzy import fuzz
 import objectpath
 
-from tools.whosampled import Scraper
-from tools.options import Options
-from tools.logger import Logger
-from tools import direction as d
+from samplify.tools.whosampled import Scraper
+from samplify.tools.options import Options
+from samplify.tools.logger import Logger
+from samplify.tools import direction as d
 
-import config as cfg
+import samplify.config as cfg
 
 # uri => spotify:album:2laBNOqPW85M3js7qCYhKt
 # http => https://open.spotify.com/album/2laBNOqPW85M3js7qCYhKt?si=QkZUkYZpSpuT1Xir6z7hGw

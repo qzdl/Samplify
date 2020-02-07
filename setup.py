@@ -12,7 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/qzdl/samplify",
-    packages=setuptools.find_packages('src'),
+    packages=setuptools.find_packages('src', 'src/tools'),
     package_dir={'': 'src'},
     entry_points="""
      [console_scripts]
