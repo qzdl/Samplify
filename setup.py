@@ -12,10 +12,11 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/qzdl/samplify",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages('src'),
+    package_dir={'': 'src'},
     entry_points="""
      [console_scripts]
-     samplify = samplify
+     samplify = samplify.samplify:main
     """,
     classifiers=[
         "Programming Language :: Python :: 3",
