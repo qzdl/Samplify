@@ -21,3 +21,19 @@ def get_paged_content_by_direction(direction):
         return 'sampled'
     if direction == contains_sample_of:
         return 'samples'
+
+def get_originator_from_direction(direction, breakdown_ids):
+    """ normalise 'dest' / 'source' relationship as 'originator' / 'sample',
+        where the originator is the subject of the initial request
+        - this assumes the return from whosampled.get_videos_from_breakdown
+          is [DEST, SOURCE]
+    """
+    if direction == contains_sample_of:
+        return breakdown_ids[0], breakdown_ids[1] # originator is dest
+
+    if direction == was_sampled_in or \
+       direction == was_remixed_in or \
+       direction == was_covered_in:
+        return breakdown_ids[1], breakdown_ids[0] # originator is source
+
+    raise Exception(f'Invalid direction: {direction}')

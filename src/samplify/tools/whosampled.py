@@ -136,6 +136,24 @@ class Scraper:
 
     def get_direction_content(self, direction, link, headings=None,
                               soup=None, recursing_page=False):
+        """ Gets detail page, and parses out sample data in the corresponding direction
+            - reused within recursive portions in child functions
+
+            Parameters:
+            - direction: from tools.direction
+              + e.g. direction.contains_sample_of
+
+            - link:      top-level identifier for a track page
+              + e.g '/Nas/Halftime'
+
+            - heading: the direction heading before a section of content
+              + if this is not null, `heading.find_next_sibling` will return the
+                sample grid
+
+            - soup: the currently working doc soup - skips a request if not null
+
+            - recursing_page: safety against infinite loops when called from children
+        """
         samples = []
         if not soup:
             url = f'{self.base_url}{link}'
@@ -177,32 +195,43 @@ class Scraper:
         """
         # split entries by newlines, and properties within entries by tabs
         parsed_samples = []
-        raw_samples =  [
-            i.split('\n') for i in
-            list(filter(None, sample_data.text.split('\t')))
-        ][:-1]
+        raw_samples = sample_data.findAll('div', attrs={'class': 'sampleEntry'})
+
         if len(raw_samples) >= 5 and not recursing_page:
             parsed_samples = self.scrape_paged_content(direction, link)
         else:
+            find_class = lambda s,e,c: s.find(e, attrs={'class': c})
             for sample in raw_samples:
-                interim = sample[-2].replace('by ', '', 1).split(' (')
-                year = interim[1].replace(')', '')
-                artist = interim[0]
+                track_artist = find_class(sample, 'span','trackArtist')
+                track_name = find_class(sample, 'a', 'trackName')
+                track_badge = find_class(sample, 'div', 'trackBadge')
+                track_type = find_class(track_badge, 'span', 'topItem')
+                track_genre = find_class(track_badge, 'span', 'bottomItem')
+                breakdown_ref = track_name.get('href')
+                print(breakdown_ref)
+                ids = self.get_videos_from_breakdown(breakdown_ref)
+                yt_originator, yt_sample = direct.get_originator_from_direction(direction, ids)
                 parsed_samples.append({
-                    'type': sample[-7],
-                    'genre': sample[-6],
-                    'title': sample[-3],
-                    'artist':  artist, # TODO: make this an array from each <a> in .trackArtist
-                    'year': year
+                    'type': track_type.text if track_type else '',
+                    'genre': track_genre.text if track_genre else '',
+                    'title': track_name.text,
+                    'artist': [a.text for a in track_artist.find_all('a')],
+                    'year': track_artist.text[-9:-5],
+                    'yt_breakdown': track_name.get('href'),
+                    'yt_originator': yt_originator,
+                    'yt_sample': yt_sample
                 })
-
         self.log(message=f'Parsing sample data from {link}',
                  function='parse_sample_items',
                  data=parsed_samples)
-        return parsed_samples # TODO: only use unique samples? note that set() won't be able to hash a dict
+        return parsed_samples
 
     def scrape_paged_content(self, direction, link):
-        """Heads to scaped"""
+        """ Accesses top-level paged content where n:samples > 5
+            - handles pagination dynamically
+            - from landing on top-level page to last page
+            - calls out to `parse_sample_items` for individual rows
+        """
         paged_link= f'{link}{direct.get_paged_content_by_direction(direction=direction)}/'
         soup, _, samples = self.get_direction_content(
             direction=direction,
@@ -227,7 +256,7 @@ class Scraper:
 
         for page_number in range(2, max(last_link_num, potential_max_link_num)+1):
             number_link = f'{paged_link}?cp={page_number}'
-            self.log(message='Getting paged content for {number_link}')
+            self.log(message=f'Getting paged content for {number_link}')
             soup, _, paged_samples = self.get_direction_content(
                 direction=direction,
                 link=number_link,
@@ -236,8 +265,21 @@ class Scraper:
                 recursing_page=True
             )
             samples = (samples or []) + paged_samples
-        print('endings paging recursion', samples)
+
+        self.log(message='ending paging recursion', data=samples)
         return samples
+
+
+    def get_videos_from_breakdown(self, link):
+        url = self.base_url + link
+        breakdown = BeautifulSoup(self.req.get(url).content, 'html.parser')
+        print(url)
+        ids = [
+            div.iframe.get('id') if div.iframe else None for div in
+            breakdown.find_all('div', attrs={'class': 'sample-embed'})
+        ]
+
+        return ids # subject is normalised above as (originator, sample)
 
     def log(self, **kwargs):
         self.logger.log(**kwargs)
@@ -246,7 +288,6 @@ class Scraper:
 if __name__ == '__main__':
     import json
     s = Scraper(3)
-
 
     result = s.get_whosampled_playlist(
         [{"track": "halftime", "artist": ["nas"]}],
@@ -265,6 +306,6 @@ if __name__ == '__main__':
 
     # result = s.get_whosampled_playlist(
     #     [{"track": "School Boy Crush", "artist": ["Average White Band"]}],
-    #     direction=[direct.was_sampled_in, direct.contains_sample_of, direct.was_covered_in]
+    #     direction=[direct.was_sampled_in, direct.contains_sample_of, direct.was_
     # )
     # print(json.dumps(result, indent=2))

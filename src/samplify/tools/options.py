@@ -56,4 +56,4 @@ class Options:
         self.output_name = output_name
         self.output_type = output_type if output_type else self.CREATE_ONLY
         self.scope = scope
-        self.username = username if username else config.username
+        self.username = username if username else config.config.username
