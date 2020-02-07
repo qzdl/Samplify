@@ -1,13 +1,12 @@
 import argparse
-from sample_finder import Samplify
-from tools.options import Options
+from samplify.sample_finder import Samplify
+from samplify.tools.options import Options
 
 """
 CLI Frontend to Samplify
 """
 
-
-if __name__ == '__main__':
+def main():
     options = Options()
     parser = argparse.ArgumentParser()
     reference_group = parser.add_mutually_exclusive_group(required=True)
@@ -120,3 +119,6 @@ if __name__ == '__main__':
             output_type=args.output_type,
             username=args.username
         )
+
+if __name__ == '__main__':
+    main()
