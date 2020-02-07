@@ -1,4 +1,5 @@
-# SAMPLIFY: Get Samples from any Playlist / Album / Song / Search
+# Samplify
+Retrieve the samples from any playlist / album / song / search.
 
 ## Getting Started
 Setup TLDR; 
@@ -159,10 +160,9 @@ for track in tracks:
 print(json.dumps(track_info, indent=2))
 ```
 
-## Notes
+## Attribution
 This project is based on the work of [Christopher Pease (cpease00)](https://github.com/cpease00/)'s sample collection tool   [Spotify-Samples](https://github.com/cpease00/).
-Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic,   
-I would have had a bunch more pain to go through in producing the project as it is now.
+Without his [medium article](https://medium.com/@chris.m.pease/automating-finding-music-samples-on-spotify-with-whosampled-54f86bcda1ee) on the topic, it would have been much more painful to produce the project as it is now.
 
 ### `Options()`
 ### `Samplify()`
