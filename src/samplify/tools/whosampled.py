@@ -1,12 +1,8 @@
 import requests
 from time import time
 from bs4 import BeautifulSoup
-if __name__ == '__main__':
-    import direction as direct
-    import logger
-else:
-    from . import direction as direct
-    from . import logger
+import samplify.tools.direction as direct
+import samplify.tools.logger as logger
 
 class Scraper:
     """ A scraper for whosampled

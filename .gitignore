@@ -131,6 +131,6 @@ config*
 .\#*
 
 # venv
-samplify/
 *secret*
 client.json
+# samplify/

@@ -1,5 +1,5 @@
-from tools import direction as direct
-import config.config as config
+from samplify.tools import direction as direct
+import samplify.config as config
 
 class Options:
     def __init__(self):
