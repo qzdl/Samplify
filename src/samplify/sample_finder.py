@@ -9,7 +9,7 @@ from samplify.tools.options import Options
 from samplify.tools.logger import Logger
 from samplify.tools import direction as d
 
-from samplify.platforms import platform
+import samplify.platform as platform
 import samplify.config as cfg
 
 # uri => spotify:album:2laBNOqPW85M3js7qCYhKt
@@ -45,7 +45,7 @@ class Samplify(object):
     def from_search(self, search_term, content_type,
                     direction=None, output_name=None, output_type=None):
         options = Options()
-        result = self.input_platform.search(search_term)
+        builder, result = self.input_platform.search(search_term)
         self.log(message=f'Searched for "{search_term}"',
                  function='from_search',
                  data=result)
@@ -55,7 +55,7 @@ class Samplify(object):
         # build objectpath query & get first result
         tree_obj = objectpath.Tree(result)
         search_mod = '.album' if options.type_is_album(content_type) else ''
-        query = f'$.tracks.items{search_mod}.(name, uri)'
+        query = f'${search_mod}.(name, uri)'
         queried = json.loads(json.dumps(tuple(tree_obj.execute(query))))[0]
 
         options.parent_name = queried['name']

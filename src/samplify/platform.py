@@ -9,10 +9,11 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy import util
 
-from config import config
+from samplify.config import config
 
 SPOTIFY = 'spotify'
 YOUTUBE = 'youtube'
+STDOUT = 'stdout'
 
 def get_platform(name):
     if name == SPOTIFY:
@@ -246,3 +247,7 @@ class Youtube(Platform):
                 }
             })  # end insert
         return add_request.execute() # yields body of request
+
+
+class StdOut(Platform):
+    pass
