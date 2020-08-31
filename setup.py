@@ -7,7 +7,7 @@ setuptools.setup(
     name="samplify-QZDL", # Replace with your own username
     version="0.0.1",
     author="Samuel Culpepper",
-    author_email="library@samuelculpepper.com",
+    author_email="info@samuelculpepper.com",
     description="The sample retrieval engine, powered by WhoSampled",
     long_description=long_description,
     long_description_content_type="text/markdown",
