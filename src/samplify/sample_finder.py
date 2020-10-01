@@ -38,12 +38,13 @@ class Samplify(object):
 
 
         spotify_dict = self.get_sample_spotify_tracks(sample_data, options)
-        options.output_name, description = self.populate_output(
+        options.output_name, description, long_description = self.populate_output(
             options=options,
             sample_tracks=spotify_dict
         )
 
         self.log(message=f'\n{description}')
+        self.log(message=f'\n{long_description}')
         self.log(message=f'Created playlist {options.playlist_name}')
         return self.spotify
 
@@ -286,11 +287,13 @@ class Samplify(object):
 
         ids = [track['id'] for track in sample_tracks['found']]
 
+        # FIXME: split at 50 entries & map `user_playlist_add_tracks` over
+        # resultant list
         self.spotify.user_playlist_add_tracks(
             options.username, playlist_id, ids, position=None)
         self.spotify.user_playlist_change_details(
-            playlist_id=playlist_id,description=description)
-        return playlist_name, description
+            options.username, playlist_id=playlist_id,description=description)
+        return playlist_name, description, long_description
 
     def generate_description(self, sample_data, options):
         """
