@@ -2,6 +2,15 @@
 Retrieve the samples from any playlist / album / song / search.
 
 ![Playlists created by the tool](./docs/spotify_cap.png)
+![A whole FOLDER, wowee](./docs/spotify/folder.png)
+
+## Check out some examples!
+- [SAMPLIFY: The Sun Rises In The East](https://open.spotify.com/playlist/7JWE1uxtyGQBcTAwqd7kVy?si=7wLBBh4zTwajgKZ0jL7gxg)
+- [SAMPLIFY: Lyricist Lounge Volume 2](https://open.spotify.com/playlist/2vVO9YRSCrpmulePY3M7lC?si=ylIzvY27STCxp8m2NrwVCg)
+- [SAMPLIFY: Illmatic XX](https://open.spotify.com/playlist/4MprkjhqQeM9Vwwu3UvK0Y?si=HHtOA9VFSGa0CiGEmMrbWA)
+- [SAMPLIFY: Section 80](https://open.spotify.com/playlist/2PIueG5s0mM0qCNYVHyaGB?si=yEX1abpdTr2XzfN3QR9R1Q)
+- [SAMPLIFY: good kid, m.A.A.d city (deluxe)](https://open.spotify.com/playlist/70PZLRctbio4ZczZHFGmya?si=JpOiBGmVRkiWfr7rvR8LJg)
+
 
 ## Getting Started
 Setup TLDR; 
