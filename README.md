@@ -2,9 +2,9 @@
 Retrieve the samples from any playlist / album / song / search.
 
 ![Playlists created by the tool](./docs/spotify_cap.png)
-![A whole FOLDER, wowee](./docs/spotify/folder.png)
+![A whole FOLDER, wowee](./docs/folder.png)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/3qHlcztdHAg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3qHlcztdHAg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen</iframe>
 
 ## Check out some examples!
 - [SAMPLIFY: The Sun Rises In The East](https://open.spotify.com/playlist/7JWE1uxtyGQBcTAwqd7kVy?si=7wLBBh4zTwajgKZ0jL7gxg)
