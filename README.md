@@ -1,6 +1,8 @@
 # Samplify
 Retrieve the samples from any playlist / album / song / search.
 
+![Playlists created by the tool](./docs/spotify_cap.png)
+
 ## Getting Started
 Setup TLDR; 
 ```
@@ -39,9 +41,6 @@ username = '1134745600'
 # is identical to the letter or you'll get "INVALID REDIRECT"
 redirect = 'http://localhost:8889'
 ```
-
-## Usage
-![Playlists created by the tool](./docs/spotify_cap.png)
 
 ## Documentation
 ### Command Line Interface `CLI`
@@ -125,16 +124,14 @@ Created playlist SAMPLIFY: Uptown Saturday Night
 
 
 ## Program Overview
-Playlists are read from Spotify through the Spotify API using Spotipy.  
-Song names and artists are stored and then located on `Whosampled.com`.  
+Aribrary playlists, albums, and songs, are read from Spotify via [a fork of spotipy](https://github.com/qzdl/spotipy). Song names and artists are stored and then located on `Whosampled.com`.
 
 A request is sent to the site searching for the song name, selecting a result  
 with the matching artist name and storing the link to that song's page. A second  
 request is sent to that song page, and BeautifulSoup is used to scrape HTML for  
-sample names, which are also stored.
+sample details, while paging for >5 references to a category of a sample is recursively expanded in the scraper.
 
-Next, the samples are located using Spotipy, if they exist. Finally, a new  
-playlist is created for the user, containing all the samples available on Spotify.
+Next, the samples are located on Spotify, if they exist, by computing the [Levenshtein distance](TODO) between the a _cleaned_ WhoSampled song title, and the top 10 search results - and choosing 'best match' - the highest ratio from this distance computation.  Finally, a new playlist is created for the user, containing all the samples available on Spotify. These requests to add tracks are partioned to _n_ requests, partitioned at 50, to side-skirt the rate-limiting imposed by Spotify's REST API for [add-tracks-to-playlist](https://developer.spotify.com/documentation/web-api/reference/playlists/add-tracks-to-playlist/).
 
 ## Example Route Parsing
 Discovering how payloads differ to extend the functionality to albums, current song,  
