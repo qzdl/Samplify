@@ -1,0 +1,30 @@
+* TODO
+** whosampled.py
+*** TODO simplify: replace manual SPACE char encoding with proper char encoding for whole query-string
+** general
+*** TODO add typing wherever possible
+*** TODO add some critical tests
+*** TODO get to 50% test coverage
+*** TODO get to 80% test coverage
+*** TODO get to 100% test coverage
+*** TODO simplify: make config into some $HOME/$XDG_CONFIG_DIR thing
+*** TODO note that this application can be used on android too
+*** TODO publish to pypi
+*** TODO import to guix from pypi
+** backend
+*** TODO refactor as platform-agnostic :backend:
+use some interface abstraction for the 'platform' so similar 
+ranges of actions can be built for various backends and plugged in
+*** TODO refactor as input-type agnostic :ui:
+so we can use spotify input, youtube/ytm input, 
+..., natural language list input
+*** TODO refactor as output-type agnostic  :ui:backend:
+currently the input method is coupled to the output method, when 
+this isn't necessary
+*** TODO explore interface options (exposing samplify as OAS3.1.0 generated flask api) :ui:
+currently we only have a CLI, but it might be good to have a web 
+API, such that some web interface might be built. 
+
+this might help in terms of oauth and ease-of-use for normies - such a core web 
+application doesn't even really need persisted state (will rinse 
+whosampled with big load though) 
