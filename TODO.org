@@ -12,7 +12,7 @@
 *** TODO publish to pypi
 *** TODO import to guix from pypi
 ** backend
-*** TODO refactor as platform-agnostic :backend:
+*** TODO refactor as platform-agnostic (see branch platform-refactor) :backend:
 use some interface abstraction for the 'platform' so similar 
 ranges of actions can be built for various backends and plugged in
 *** TODO refactor as input-type agnostic :ui:
