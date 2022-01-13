@@ -24,7 +24,7 @@ git clone https://github.com/qzdl/samplify.git && cd samplify && venv samplify &
 - Clone this repo with `git clone https://github.com/qzdl/samplify.git`
 - `cd` to the new directory, and create a new virtual environment with `venv samplify`
 - Run `source samplify/bin/activate` to activate the new environment.
-- Install the dependencies with `pip -r requirements.txt`
+- Install the dependencies with `pip install -r requirements.txt`
   * Refer to [`requirements.txt`](./requirements.txt) for a list of packages
 
 ### Spotify API Access; config.py
@@ -34,9 +34,9 @@ If you haven't used the spotify API before:
   * This can be found in the information page of a registered application > edit settings.
 - Create `config.py` at the root of the repository, and populate it as follows:
 (NOTE: these are not valid credentials )
-```
-# ClientID from registered application at:
-https://developers.spotify.com/dashboard/applications
+```python
+# ClientID from registered application at: 
+# https://developers.spotify.com/dashboard/applications
 client = '7bf224e8jn954215s3g11degh599e3an'
 
 # Client Secret can be found below 'SHOW CLIENT SECRET' once you are on the info
@@ -57,7 +57,7 @@ redirect = 'http://localhost:8889'
 ### Command Line Interface `CLI`
 Detail about the CLI can be found by reading the documentation provided by the `--help`
 option flag. Documentation will but updated there as the project progresses.
-```
+```shell
 (samplify) [samuel@qzdl spotify-samples]$ python samplify.py
 usage: samplify.py [-h] (-l LINK | -s SEARCH)
                    (--album | --playlist | --song | --current-song)
@@ -66,7 +66,7 @@ usage: samplify.py [-h] (-l LINK | -s SEARCH)
 samplify.py: error: one of the arguments -l/--link -s/--search is required
 ```
 
-```
+```shell
 (samplify) [samuel@qzdl spotify-samples]$ python samplify.py --help
 usage: samplify.py [-h] (-l LINK | -s SEARCH)
                    (--album | --playlist | --song | --current-song)
@@ -88,7 +88,7 @@ optional arguments:
   --username USERNAME
 ```
 ### Example Output (from stout)
-```
+```shell
 (samplify) [samuel@qzdl spotify-samples]$ python samplify.py --search 'uptown saturday night camp lo' --album
 # SAMPLIFY: Uptown Saturday Night
 

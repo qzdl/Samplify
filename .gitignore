@@ -104,6 +104,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+samplify/
 
 # Spyder project settings
 .spyderproject
@@ -129,6 +130,3 @@ config*
 # emacs temp files
 \#*
 .\#*
-
-# venv
-# samplify/
