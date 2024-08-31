@@ -1,4 +1,5 @@
 import argparse
+
 import samplify.platform as platform
 from samplify.sample_finder import Samplify
 from samplify.tools.options import Options
@@ -6,108 +7,122 @@ from samplify.tools.options import Options
 CLI Frontend to Samplify
 """
 
+
 def main():
     options = Options()
     parser = argparse.ArgumentParser()
 
-    # input platform, default = platform.SPOTIFY
+    ### input platform, default = platform.SPOTIFY
     i_platform_group = parser.add_mutually_exclusive_group(required=False)
     i_platform_group.add_argument(
-        '--input-spotify',
+        "--input-spotify",
         action="store_const",
         const=platform.SPOTIFY,
-        dest='i_platform')
+        dest="i_platform",
+    )
 
-    # output platform, default = platform.SPOTIFY
+    ### output platform, default = platform.SPOTIFY
     o_platform_group = parser.add_mutually_exclusive_group(required=False)
     o_platform_group.add_argument(
-        '--output-spotify',
+        "--output-spotify",
         action="store_const",
         const=platform.SPOTIFY,
-        dest='o_platform')
+        dest="o_platform",
+    )
 
     o_platform_group.add_argument(
-        '--output-youtube',
+        "--output-youtube",
         action="store_const",
         const=platform.YOUTUBE,
-        dest='o_platform')
+        dest="o_platform",
+    )
 
     o_platform_group.add_argument(
-        '--output-stdout',
-        action='store_const',
+        "--output-stdout",
+        action="store_const",
         const=platform.STDOUT,
-        dest='o_platform')
+        dest="o_platform",
+    )
 
+    ### Link or Search
     reference_group = parser.add_mutually_exclusive_group(required=True)
     reference_group.add_argument(
-        '-l',
-        '--link',
-        help='Click "Share" > "Copy Link"')
+        "-l", "--link", help='Click "Share" > "Copy Link"'
+    )
 
     reference_group.add_argument(
-        '-s',
-        '--search',
-        help='Search as you would in the app')
+        "-s", "--search", help="Search as you would in the app"
+    )
 
+    ## (OR ALBUM PLAYLIST SONG CURRENT_SONG)
     content_group = parser.add_mutually_exclusive_group(required=True)
     content_group.add_argument(
-        '--album',
+        "--album",
         action="store_const",
         const=options.ALBUM,
-        dest='content_type')
+        dest="content_type",
+    )
 
     content_group.add_argument(
-        '--playlist',
+        "--playlist",
         action="store_const",
         const=options.PLAYLIST,
-        dest='content_type')
+        dest="content_type",
+    )
 
     content_group.add_argument(
-        '--song',
+        "--song",
         action="store_const",
         const=options.SONG,
-        dest='content_type')
+        dest="content_type",
+    )
 
     # FIXME: current song can't work with '--search'
     content_group.add_argument(
-        '--current-song',
+        "--current-song",
         action="store_const",
         const=options.CURRENT_SONG,
-        dest='content_type')
+        dest="content_type",
+    )
 
     parser.add_argument("--direction")
     parser.add_argument("--output-name")
     parser.add_argument("--output-type")
     parser.add_argument("--username")
 
+    ### DEBUG
     debug_group = parser.add_mutually_exclusive_group(required=False)
     debug_group.add_argument(
-        '-v',
-        help='Include function detail',
+        "-v",
+        help="Include function detail",
         action="store_const",
         const=1,
-        dest='verbosity')
+        dest="verbosity",
+    )
 
     debug_group.add_argument(
-        '-vv',
-        help='Multiline, include limited data',
+        "-vv",
+        help="Multiline, include limited data",
         action="store_const",
         const=2,
-        dest='verbosity')
+        dest="verbosity",
+    )
 
     debug_group.add_argument(
-        '-vvv',
-        help='Multiline, include full data',
+        "-vvv",
+        help="Multiline, include full data",
         action="store_const",
         const=3,
-        dest='verbosity')
+        dest="verbosity",
+    )
 
     args = parser.parse_args()
 
     samplify = Samplify(
         verbosity=args.verbosity or 0,
         input_platform=args.i_platform or platform.SPOTIFY,
-        output_platform=args.o_platform or platform.SPOTIFY);
+        output_platform=args.o_platform or platform.SPOTIFY,
+    )
 
     result = None
     if args.search:
@@ -116,7 +131,8 @@ def main():
             direction=args.direction,
             content_type=args.content_type,
             output_name=args.output_name,
-            output_type=args.output_type)
+            output_type=args.output_type,
+        )
 
     elif options.type_is_playlist(args.content_type):
         result = samplify.playlist(
@@ -124,14 +140,16 @@ def main():
             direction=args.direction,
             output_name=args.output_name,
             output_type=args.output_type,
-            username=args.username)
+            username=args.username,
+        )
 
-    elif  options.type_is_album(args.content_type):
+    elif options.type_is_album(args.content_type):
         result = samplify.album(
             reference=args.link,
             direction=args.direction,
             output_name=args.output_name,
-            output_type=args.output_type)
+            output_type=args.output_type,
+        )
 
     elif options.type_is_song(args.content_type):
         result = samplify.song(
@@ -139,7 +157,8 @@ def main():
             direction=args.direction,
             output_name=args.output_name,
             output_type=args.output_type,
-            username=args.username)
+            username=args.username,
+        )
 
     elif options.type_is_current_song(args.content_type):
         result = samplify.current_song(
@@ -147,7 +166,9 @@ def main():
             direction=args.direction,
             output_name=args.output_name,
             output_type=args.output_type,
-            username=args.username)
+            username=args.username,
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
